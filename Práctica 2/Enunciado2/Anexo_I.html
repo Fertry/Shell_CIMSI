@@ -1,0 +1,105 @@
+<!DOCTYPE html []>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="author" content="MarkdownViewer++" />
+    <title>CIMSI: Práctica 3, Anexo I</title>
+    <script type="application/javascript">
+		function impresora(){
+			document.getElementById("pagestyle").setAttribute("href", "impresora.css");
+		}
+		function pantalla(){
+			document.getElementById("pagestyle").setAttribute("href", "pantalla.css");
+		}		
+	</script>
+	<link id="pagestyle" href="pantalla.css" rel="stylesheet" type="text/css" />    
+  </head>
+  <body>
+  <h1><center> Configuración, Implementación y Mantenimiento de Sistemas Informáticos. Tercer curso. </center>
+    </h1>
+      <div align="right">
+        <input name="boton1" type="submit" id="boton" onClick="impresora()" value="Versión Impresora">
+        <input name="boton2" type="submit" id="boton" onClick="pantalla()" value="Versión Pantalla">      
+      </div>    
+<hr />
+    <h1 id="practica-3-anexo-i-opcional-compartir-imagenes">Práctica 3: Anexo I (opcional): Compartir imágenes.</h1>
+    <p>Para demostrar la portabilidad de lo que hemos creado, vamos a cargar la imagen que hemos generado en un registro para que se pueda ejecutar desde cualquier lugar. Esta operación, conocida como <code>push</code> es necesaria realizarla para desplegar contenedores en producción.
+Un registro es un conjunto de repositorios, y un repositorio es un conjunto de imágenes ordenadas. Docker CLI utiliza, por defecto, el registro público de Docker.</p>
+    <h2 id="acceso-con-docker-id">Acceso con Docker ID</h2>
+    <p>Si no dispones de cuenta Docker, puede obtener una de forma gratuita en <code>hub.docker.com</code></p>
+    <p>Accede al registro público de Docker desde la máquina local:</p>
+    <pre class="Ventana_codigo">
+<code>docker@ubuntu:~/img$ docker login
+Login with your Docker ID to push and pull images from Docker Hub. If you don't have a Docker ID, head over to https://hub.docker.com to create one.
+Username: mjmoron
+Password: 
+WARNING! Your password will be stored unencrypted in /home/docker/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+Login Succeeded
+</code>
+    </pre>
+    <h2 id="etiquetar-la-imagen">Etiquetar la imagen</h2>
+    <p>La notación para asociar una imagen local con un repositorio en un registro es <code>sername/repository:tag</code>. La etiqueta es opcioanal pero se recomienda ya que es el mecanismo que usan los registros para asignar una versión a las imágenes Docker.
+Se deben asignar nombres con significado para el contexto donde se van emplear:  <code>get-started:part2</code> situará la imagen en repositorio <code>get_started</code> y la etiquetará como <code>part2</code>.</p>
+    <p>Para etiquetar nuestra imagen emplearemos <code>docker tag image username/repository:tag</code>.</p>
+    <pre class="Ventana_codigo">
+<code>docker@ubuntu:~/img$ docker tag friendlyhello mjmoron/get_started:part2
+</code>
+    </pre>
+    <p>Para comprobar nuestras imágenes:</p>
+    <pre class="Ventana_codigo">
+<code>docker@ubuntu:~/img$ docker image ls
+REPOSITORY            TAG                 IMAGE ID            CREATED             SIZE
+friendlyhello         latest              da4b5e890aa5        6 hours ago         131MB
+mjmoron/get_started   part2               da4b5e890aa5        6 hours ago         131MB
+python                2.7-slim            eb40dcfcbc42        4 weeks ago         120MB
+hello-world           latest              fce289e99eb9        5 months ago        1.84kB
+</code>
+    </pre>
+    <h2 id="publicar-nuestra-imagen">Publicar nuestra imagen</h2>
+    <p>Para subir la imagen etiquetada al repositorio se emplea <code>docker push username/repository:tag</code>:</p>
+    <pre class="Ventana_codigo">
+<code>docker@ubuntu:~/img$ docker push mjmoron/get_started:part2
+The push refers to repository [docker.io/mjmoron/get_started]
+c463a0bc932f: Pushed 
+10a4ac34caf3: Pushed 
+5c525f534431: Pushed 
+0ec0d723449a: Mounted from library/python 
+5c78e81a8fd9: Mounted from library/python 
+7b6b548a54d0: Mounted from library/python 
+6270adb5794c: Mounted from library/python 
+part2: digest: sha256:e94545fd21b3f4d78e06e978711e7f5758ff2e8f4c1817305861b8a193fd43e3 size: 1788
+</code>
+    </pre>
+    <p>Esta imagen estará disponible de forma pública en Docker Hub.</p>
+    <h2 id="descargar-y-ejecutar-la-imagen-desde-el-repositorio-remoto">Descargar y ejecutar la imagen desde el repositorio remoto</h2>
+    <p>Desde este momento es posible la ejecución de la imagen en cualquier máquina ejecutando:</p>
+    <pre class="Ventana_codigo">
+<code>docker run -p 4000:80 mjmoron/get_started:part2
+</code>
+    </pre>
+    <p>Si borramos la imagen para que eliminarla localmente:</p>
+    <pre class="Ventana_codigo">
+<code>docker@ubuntu:~/img$ docker image rm mjmoron/get_started:part2 
+</code>
+    </pre>
+    <p>Y volvemos a ejecutar el comando:</p>
+    <pre class="Ventana_codigo">
+<code>docker@ubuntu:~/img$ docker run -p 4000:80 mjmoron/get_started:part2
+Unable to find image 'mjmoron/get_started:part2' locally
+part2: Pulling from mjmoron/get_started
+Digest: sha256:e94545fd21b3f4d78e06e978711e7f5758ff2e8f4c1817305861b8a193fd43e3
+Status: Downloaded newer image for mjmoron/get_started:part2
+ * Serving Flask app "app" (lazy loading)
+ * Environment: production
+   WARNING: This is a development server. Do not use it in a production deployment.
+   Use a production WSGI server instead.
+ * Debug mode: off
+ * Running on http://0.0.0.0:80/ (Press CTRL+C to quit)
+</code>
+    </pre>
+    <p>Independientemente de lugar donde se ejecute, se descargará la imagen y todas las dependencia especificadas en <code>requirements.txt</code>, y ejecutará el código, sin necesidad de instalar nada especial en la máquina afitrión.</p>
+  </body>
+</html>

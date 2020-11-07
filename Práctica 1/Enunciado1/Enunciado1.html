@@ -1,0 +1,560 @@
+<!DOCTYPE html []>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="author" content="MarkdownViewer++" />
+    <title>CIMSI: Práctica 1</title>
+    <script type="application/javascript">
+		function impresora(){
+			document.getElementById("pagestyle").setAttribute("href", "impresora.css");
+		}
+		function pantalla(){
+			document.getElementById("pagestyle").setAttribute("href", "pantalla.css");
+		}		
+	</script>
+	<link id="pagestyle" href="pantalla.css" rel="stylesheet" type="text/css" />    
+  </head>
+  <body>
+      <h1><center> Configuración, Implementación y Mantenimiento de Sistemas Informáticos. Tercer curso. </center>
+    </h1>
+      <div align="right">
+        <input name="boton1" type="submit" id="boton" onClick="impresora()" value="Versión Impresora">
+        <input name="boton2" type="submit" id="boton" onClick="pantalla()" value="Versión Pantalla">      
+      </div>    
+<hr />
+    <h1 id="practica-1-introduccion-a-la-virtualizacion-y-a-la-shell-de-linux">Practica 1: Introducción a la virtualización y a la shell de Linux</h1>
+    <p>El objetivo de esta práctica es proporcionar al alumno unos conocimiento básicos sobre:</p>
+    <ul>
+      <li>Virtualización de escritorio</li>
+      <li>Comandos de la shell de Linux y la programación bash.</li>
+    </ul>
+    <p>Para la realización de las prácticas se usará una máquina virtual con una distribución de Linux Ubuntu 18.04, que podrá encontrar en el disco duro compartido de las aulas de prácticas. Para validar la asistencia a las sesiones de esta práctica, tendrá que realizar la práctica hasta llegar al HITO.</p>
+    <p>La primera parte de la práctica indica cómo instalar y dar los primeros pasos para ejecutar máquinas virtuales. La segunda introduce al alumno en la consola de comandos y propone algunos ejercicios.</p>
+    <hr />
+    <h1 id="parte-1-virtualizacion-de-escritorio">Parte 1: Virtualización de escritorio</h1>
+    <h2 id="virtualbox">VirtualBox</h2>
+    <p>El software de virtualización (hipervisor) utilizado en la asignatura es VirtualBox. La máquina que ejecuta el hipervisor se denomina máquina anfitrión (host) y la máquina que se ejecuta dentro del anfitrión se llama máquina virtual. A continuación se verán las operaciones básicas para operar con máquinas virtuales.</p>
+    <h3 id="instalacion-bajo-ubuntu-18.04">Instalación (bajo Ubuntu 18.04)</h3>
+    <p>Este subapartado sólo se aplica a los alumnos que quieran instalar VirtualBox en su máquina particular, cuyo sistema operativo es Linux 18.04. Podrá ver que en las secciones de código aparece el prompt del sistema como <code>usrCIMSI@ubuntu1804:</code>. Esto es sólamente una indicación de la consola de comandos para indicar el nombre de usuario (usrCIMSI) y la máquina en la que ese usuario está operando (ubuntu1804) en su máquina el prompt puede ser diferente a este, sin que ello de lugar a ninguna incorrección.</p>
+    <p>1 – Actualizar el sistema</p>
+    <p>Entramos al sistema con un usuario que pueda ejecutar <code>sudo</code>. Actualizamos los paquetes del sistema para tener la útima versión.</p>
+    <pre class="Ventana_codigo">
+<code>usrCIMSI@ubuntu1804:~$ sudo apt update
+usrCIMSI@ubuntu1804:~$ sudo apt upgrade
+</code>
+    </pre>
+    <p>2 – Añadir el repositorio Apt</p>
+    <p>En primer lugar es necesario importar la clave pública de Oracle:</p>
+    <pre class="Ventana_codigo">
+<code>usrCIMSI@ubuntu1804:~$ wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo apt-key add -
+OK
+usrCIMSI@ubuntu1804:~$ wget -q https://www.virtualbox.org/download/oracle_vbox.asc -O- | sudo apt-key add -
+OK
+</code>
+    </pre>
+    <p>A continuación, se añade el repositorio Oracle VirtualBox PPA al sistema:</p>
+    <pre class="Ventana_codigo">
+<code>usrCIMSI@ubuntu1804:~$ sudo add-apt-repository "deb http://download.virtualbox.org/virtualbox/debian bionic contrib"
+</code>
+    </pre>
+    <p>3 – Relizar la Instalción de VirtualBox en Ubuntu 18.04</p>
+    <p>Tras completar los pasos anteriores, sólo queda instalar VirtualBox. Si estuviera instalada una versión antigua, se actualizaría automáticamente:</p>
+    <pre class="Ventana_codigo">
+<code>usrCIMSI@ubuntu1804:~$ sudo apt update
+usrCIMSI@ubuntu1804:~$ sudo apt install virtualbox-6.0
+</code>
+    </pre>
+    <p>4 – Ejecutar VirtualBox</p>
+    <p>Es posible utilizar los iconos del entorno gráfico para ejecutar VirtualBox, aunque podemos introducir el siguiente comando en un terminal:</p>
+    <pre class="Ventana_codigo">
+<code>usrCIMSI@ubuntu1804:~$ virtualbox
+</code>
+    </pre>
+    <p>Aparecerá la pantalla principal de <strong>VirtualBox</strong>:
+<img src="Figuras/01_VBox.png" alt="Ventana GUI VirtualBox 6.0" /></p>
+    <h3 id="creacion-de-la-maquina-virtual-desde-cero">Creación de la Máquina Virtual desde cero</h3>
+    <p>Con VirtualBox instalado y en ejecución, para crear una máquina virtual nueva utilizaremos la opción del menú correspondiente y podremos seguir un asistente. En la primera pantalla se introduce el nombre de la MV, la carpeta donde se almacenará y el tipo y versión de Sistema Operativo:</p>
+    <p>
+      <img src="Figuras/02_VBox.png" alt="Creación de una máquina virtual" />
+    </p>
+    <p>A continuación solicita la cantidad de memoria que se le asignará. Nos indica la cantidad recomendada por defecto para el Sistema Operativo seleccionado en el paso anterior, auque podemos variar la cantidad hasta el máximo disponible en el sistema. VirtualBox nos idica con colores los rangos de mememoria seguros y aquellos (en rojo) que podrían comprometer al sistema:</p>
+    <p>
+      <img src="Figuras/03_VBox.png" alt="Memoria asignada" />
+    </p>
+    <p>Para asignar almacenamiento a la MV se puede seguir el asistente o bien dejarlo para su configuración manual posterior.
+En el primer caso es posible seleccionar un disco virtual existente o crear uno nuevo:</p>
+    <p>
+      <img src="Figuras/04_VBox.png" alt="Selección de disco" />
+    </p>
+    <p>Seleccionando una nueva imagen, nos solicita el tipo de fichero que la contendrá. Lo tres formatos disponible son <code>VDI</code>, nativo de <strong>VirtualBox</strong>, <code>VHD</code> compatible con Windows y <code>VMDK</code> típico de <strong>VMWare</strong>. Normalmente emplearemos el primero:</p>
+    <p>
+      <img src="Figuras/05_VBox.png" alt="Tipos de imagen de disco" />
+    </p>
+    <p>Este formato de disco virtual es posible reservarlo dinámicamente, de forma que ocupará espacio real de almacenamiento sólo cuando se utilice realmente el almacenamiento virtual. También es posible reservar de forma estática todo el almacenamiento al principio:</p>
+    <p>
+      <img src="Figuras/06_VBox.png" alt="Reserva dinamica" />
+    </p>
+    <p>Finalmente, nos solicita el nombre y la ubicación de la imagen, y el límite del tamaño asignado:</p>
+    <p>
+      <img src="Figuras/07_VBox.png" alt="Ubicación de la imagen y tamaño" />
+    </p>
+    <p>Ya tenemos la máquina disponible y, desde el panel de control, podemos observar y modificar, si es necesario, su configuración:</p>
+    <p>
+      <img src="Figuras/08_VBox.png" alt="Máquina creada" />
+    </p>
+    <h3 id="configuracion-de-una-maquina-virtual">Configuración de una Máquina Virtual</h3>
+    <p>Ya sea para una nueva máquina virtual o una ya existente, podemos cambiar la configuración de la misma como si de una máquina real se tratara, añadiendo o quitando memoria, discos duros, procesadores... El requisito indispesable para ello es que la máquina virtual no esté en funcionamiento (como en la máquina real, sólo se puede cambiar la memoria si la máquina está apagada). Si accedemos a la configuración, podemos cambiar los parámetros que se seleccionaron en el asistente, como el nombre de la MV o su tipo:</p>
+    <p>
+      <img src="Figuras/09_VBox.png" alt="Parámetros generales" />
+    </p>
+    <p>En las opciones del sistema es posible modificar el tamaño de memoria o el orden de arranque, además de otros parámetros más específicos del hardware emulado</p>
+    <p>
+      <img src="Figuras/10_VBox.png" alt="Parámetros del sistema" />
+    </p>
+    <p>En la pestaña del procesador podemos asignar un determinado número de núcleos de proceso a la MV y limitar el tiempo de ejecución a un porcentaje determinado:</p>
+    <p>
+      <img src="Figuras/11_VBox.png" alt="Procesador" />
+    </p>
+    <p>En la útima pestaña aparecen parámetros específicos del modo de virtualización utilizado:</p>
+    <p>
+      <img src="Figuras/12_VBox.png" alt="Virtualización" />
+    </p>
+    <p>En el apartado de Pantalla, podemos configurar la emulación de tarjeta gráfica que se aplicará la MV:</p>
+    <p>
+      <img src="Figuras/13_VBox.png" alt="Pantalla" />
+    </p>
+    <p>En el almacenamiento se configura los controladores emulados, las unidades de almacenamiento conectadas y las imágenes que se asocian a cada dispositivo:</p>
+    <p>
+      <img src="Figuras/14_VBox.png" alt="Almacenamiento" />
+    </p>
+    <p>Es posible conectar hasta 4 interfaces de red a cada MV. Desde este apartado se habilitan y se conectan a alguna de las redes configuradas en <strong>VirtualBox</strong>. Por ejemplo, un adaptador puede conectarse a la red por defecto, de tipo <strong>NAT</strong>, para tener conectividad hacia el exterior, mientras que otro puede conectarse a una red interna de <strong>VirtualBox</strong>  y un tercero tener acceso en modo <em>bridge</em> a alguno de los adaptadores de la máquina anfitrión:</p>
+    <p>
+      <img src="Figuras/15_VBox.png" alt="Redes" />
+    </p>
+    <p>Finalmente, el posible compartir almacenamiento entre el anfitrión y la la MV:</p>
+    <p>
+      <img src="Figuras/16_VBox.png" alt="Carpetas compartidas" />
+    </p>
+    <h3 id="instalacion-del-sistema-operativo-de-una-maquina-virtual">Instalación del sistema operativo de una Máquina Virtual</h3>
+    <p>Si acabamos de crear y configurar una máquina virtual, al iniciar la ejecución de la máquina, aparecerá el asistente de instalación. En ese asistente se nos solicita una imagen desde la que realizará la instalación del Sistema Operativo de la máquina:</p>
+    <p>
+      <img src="Figuras/17_VBox.png" alt="Instalación de la MV" />
+    </p>
+    <p>Seleccionando una imagen ISO de instalación, la máquina comienza su ejecución e intenta arrancar desde esta imagen:</p>
+    <p>
+      <img src="Figuras/18_VBox.png" alt="Inicio desde imagen ISO" />
+    </p>
+    <p>A partir de este momento, podemos acceder a la consola de la MV e interactuar en el proceso de instalación:</p>
+    <p>
+      <img src="Figuras/19_VBox.png" alt="Acceso a la consola de la MV" />
+    </p>
+    <h3 id="apagado-de-una-maquina-virtual">Apagado de una máquina virtual</h3>
+    <p>El apagado de una máquina virtual en ejecución es similar a una máquina real. No obstante, hay que tener en cuenta algunas precauciones. En <em>VirtualBox</em> existen varias opciones de control de ejecución de la máquina virtual. Todas ellas están en el menú <em>Máquina</em>:</p>
+    <ul>
+      <li>Pausar: Congela la máquina virtual como si se hubiera desconectado la señal de reloj. Podremos ponerla en marcha en cualquier momento con la opción <em>Iniciar</em>, y la máquina seguirá su ejecución como si no hubiera pasado nada. Esta opción es conveniente cuando queremos retomar la ejecución de la máquina rápidamente y desde el estado anterior a la pausa.</li>
+      <li>Resetear: Es como pulsar el botón de reset de una máquina real. Implica el reseteo del procesador virtual y por lo tanto, se corre el peligro de perder datos o corromper el sistema operativo.</li>
+      <li>Apagado ACPI: Es como pulsar el botón de apagado de la máquina real. Al igual que el Reset, pueden perderse datos o corromper el sistema operativo.</li>
+    </ul>
+    <p>¿Como lograr un apagado ordenado de la máquina virtual? Para ello hay que indicarle al sistema operativo virtualizado que se quiere apagar la máquina. Para ello, se puede hacer desde la interfaz gráfica (si existe en la máquina virtual) o bien desde la consola de comandos. Un ejemplo de esto último desde Linux, es teclear el siguiente comando desde la consola de comandos de la máquina virtual:</p>
+    <pre class="Ventana_codigo">
+<code>shutdown
+</code>
+    </pre>
+    <p>La máquina se apagará y desaparecerá su ventana. Podrá volver a ejecutarla pulsando el botón <em>Iniciar</em> Una vez seleccionada de la biblioteca de máquinas virtuales.</p>
+    <h3 id="abrir-una-maquina-virtual-ya-existente">Abrir una máquina virtual ya existente</h3>
+    <p>Puede añadir una máquina virtual existente en su disco duro mediante la opción <em>Agregar</em> del menú <em>Máquina</em>. A continuación aparecerá una ventana de selección de ficheros para poder seleccionar un fichero <code>vbox</code>. Una vez agregada y seleccionada la máquina, podrá ejecutarla con el botón <em>Iniciar</em>.</p>
+    <h2 id="parte-3-la-consola-de-comandos">Parte 3: La consola de comandos</h2>
+    <h3 id="informacion-sobre-la-shell-de-linux-en-internet">Información sobre la shell de Linux en Internet</h3>
+    <p>Puede encontrar información sobre los comandos de la shell de Linux en el siguiente enlace:
+<a href="http://ss64.com/bash/">http://ss64.com/bash/</a></p>
+    <p>Además, puede utilizar el comando man (por ejemplo: <code>man ls</code>) o la opción <code>--help</code> (por ejemplo: <code>ls --help</code>). Para aprender a programar la shell puede utilizar el siguiente tutorial:
+<a href="http://tldp.org/HOWTO/Bash-Prog-Intro-HOWTO.html">http://tldp.org/HOWTO/Bash-Prog-Intro-HOWTO.html</a></p>
+    <h3 id="tutorial">Tutorial</h3>
+    <ul>
+      <li>
+        <p>
+          <strong>La <em>shell</em> de Linux (interprete de comandos)</strong>
+        </p>
+        <ul>
+          <li>La <em>shell</em> es una interfaz de usuario basada en comandos (modo
+texto).</li>
+          <li>Los usuarios ejecutan comandos con el siguiente formato:
+<em>comando</em><em>parametro1</em><em>parametro2</em> ...</li>
+          <li>El <em>prompt</em> es el carácter o conjunto de caracteres que se
+muestran en la <a href="http://es.wikipedia.org/wiki/L%C3%ADnea_de_comandos">línea de comandos</a> para
+indicar que el sistema está listo para recibir órdenes.</li>
+          <li>La entrada y salida estándar de un comando son el teclado y la
+pantalla, respectivamente.</li>
+          <li>Cuando Linux arranca se abre la consola 1, sin embargo podemos
+disponer de más consolas. Con Alt + Funcion (Alt+F1, Alt+F2, …)
+podemos cambiar de consola.</li>
+        </ul>
+      </li>
+      <li><strong>Usuarios</strong>
+        <ul>
+          <li>En Linux existen dos tipos de usuarios: usuarios normales (sin
+permiso de administración) y root (con permiso de
+administración). Los permisos de administración permiten
+administrar usuarios, modificar la configuración del sistema,
+instalar programas, etc.</li>
+          <li>En Linux, los usuarios puede pertenecer a uno o más grupos de
+usuarios.</li>
+          <li>Abra una sesión como <em>root</em> (la contraseña es <em>cimsi_root</em>).</li>
+          <li>Identifique el <em>prompt</em> del sistema.</li>
+          <li>Utilice el comando <code>adduser</code> para crear los usuarios <em>alumno</em> y
+<em>alumno2</em>.</li>
+          <li>Elimine el usuario <em>alumno2</em> con el comando <code>userdel</code>.</li>
+          <li>Cambie la contraseña del usuario <em>alumno</em> con el comando
+<code>passwd</code>. Compruebe que puede abrir una sesión con este usuario.
+Para cerrar la sesión actual utilice el comando <code>logout</code>.
+También mantener la sesión actual y abrir una nueva con Alt+F2.</li>
+        </ul>
+      </li>
+      <li><strong>Instalador de paquetes de software <code>apt</code></strong>
+        <ul>
+          <li>Véase el comando <code>apt</code> y sus distintas opciones (<code>install</code>,
+<code>update</code>,<code>upgrade</code>, <code>remove</code>) en el siguiente enlace: <em><a href="https://itsfoss.com/apt-command-guide/">https://itsfoss.com/apt-command-guide/</a></em></li>
+          <li>Instale el editor de texto <code>emacs</code>.</li>
+        </ul>
+      </li>
+      <li><strong>Configuración del teclado</strong>
+        <ul>
+          <li>Como puede comprobar fácilmente, la configuración del teclado no
+corresponde a la de un teclado en español. Configure el teclado
+en modo español con el siguiente comando: <code>loadkeys es</code>.</li>
+          <li>Para lograr que el sistema arranque con la configuración
+adecuada del teclado ejecute el comando <code>dpkg-reconfigure keyboard-configuration</code> y siga el asistente.</li>
+        </ul>
+      </li>
+      <li><strong>Configuración del uso horario</strong>
+        <ul>
+          <li>Si ejecuta el comando <code>date</code>, comprobará que la hora que aparece
+no es correcta. Esto se debe a que el uso horario configurado no
+es el que nos corresponde (es decir, el de Madrid).</li>
+          <li>Para configurar el uso horario de Madrid ejecute el siguiente
+comando:
+<pre class="Ventana_codigo"><code>cp /usr/share/zoneinfo/Europe/Madrid /etc/localtime
+</code></pre></li>
+        </ul>
+      </li>
+      <li><strong>Apagado del sistema</strong>
+        <ul>
+          <li>La manera más rápida es el comando <code>poweroff</code>. Además, puede ver las diferentes opciones del comando <code>shutdown</code>.</li>
+        </ul>
+      </li>
+      <li><strong>Sistema de archivos y comandos básicos sobre archivos</strong>
+        <ul>
+          <li>El sistema de archivos de Linux utiliza una estructura de árbol.
+A continuación se muestra la jerarquía estándar de archivos del
+sistema.</li>
+        </ul>
+      </li>
+    </ul>
+    <p>
+    <img src="Figuras/estructura-de-linux.jpg" alt="" /></p>
+    <ul>
+    <li>
+      <ul>
+        <li>
+          <p>El directorio <code>/home</code> contiene el directorio de trabajo de cada
+usuario.</p>
+        </li>
+        <li>
+          <p>El directorio actual representa el directorio en el que nos
+encontramos en un determinado momento.</p>
+        </li>
+        <li>
+          <p>El camino o <em>path</em> de un fichero o directorio es la secuencia de
+directorios que se ha de recorrer para acceder a él. Existen dos
+forman de indicar un <em>path</em>:</p>
+          <ul>
+            <li>Absoluta: Indica la secuencia de directorios desde la raíz
+(/) hasta el directorio destino.</li>
+            <li>Relativa: Indica la secuencia de directorios desde el
+directorio actual hasta el directorio destino.</li>
+          </ul>
+        </li>
+        <li>El comando pwd muestra el directorio actual. Ejecute dicho
+comando. ¿En qué directorio se encuentra? </li>
+        <li>El comando <code>cd</code> permite cambiar el directorio actual. Las
+cadenas "." y ".." representan el directorio actual y el
+directorio padre, respectivamente. Sitúese en el directorio
+<code>/home</code> desde el directorio de trabajo mediante <em>path</em> absoluto
+y mediante <em>path</em> relativo. </li>
+        <li>El comando <code>ls</code> muestra el contenido de un directorio. Muestre
+el contenido del directorio <code>/home</code>. </li>
+        <li>El comando <code>mkdir</code> permite la creación de directorios. Cree un
+directorio denominado <code>cimsi</code> en <code>/home/alumno</code>. </li>
+        <li>Muévase al directorio <code>/home/alumno/cimsi</code>. </li>
+        <li>Cree un archivo de texto (con cualquier contenido) llamado
+        <code>ejem.txt</code> en el directorio actual. </li>
+        <li>Renombre el archivo creado con el nombre  <code>ejemplo.txt</code>. Para
+ello utilice el comando <code>mv</code>. </li>
+        <li>Haga una copia del archivo ejemplo.txt que se denomine
+        <code>ejemplo2.txt</code>. Para ello utilice el comando <code>cp</code>. </li>
+        <li>Borre los archivos <code>ejemplo.txt</code> y <code>ejemplo2.txt</code> con el comando
+          <code>rm</code>. Para evitar ejecutar el comando dos veces utilice el
+carácter comodín <code>*</code>, el cual representa 0 o más caracteres. A
+continuación se muestran los caracteres comodín existentes y
+algunos ejemplos de uso: </li>
+      </ul>
+      </li>
+    </ul>
+    <table align="center">
+      <thead>
+        <tr>
+          <th>Comodín</th>
+          <th>Representa</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>?</td>
+          <td>Un solo carácter</td>
+        </tr>
+        <tr>
+          <td>.</td>
+          <td>Cualquier carácter</td>
+        </tr>
+        <tr>
+          <td>*</td>
+          <td>Cero o mas caracteres</td>
+        </tr>
+        <tr>
+          <td>[lista]</td>
+          <td>Cualquier carácter dentro de la lista especificada</td>
+        </tr>
+        <tr>
+          <td>[¡lista]</td>
+          <td>Cualquier carácter que no esté dentro de la lista especificada</td>
+        </tr>
+        <tr>
+          <td>^</td>
+          <td>Principio de línea</td>
+        </tr>
+        <tr>
+          <td>$</td>
+          <td>Fin de línea</td>
+        </tr>
+      </tbody>
+    </table>
+    <table align="center">
+      <thead>
+        <tr>
+          <th>Expresión</th>
+          <th>Resultados</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>[abc]</td>
+          <td>a, b ó c</td>
+        </tr>
+        <tr>
+          <td>[.,_]</td>
+          <td>Punto, coma o guión bajo</td>
+        </tr>
+        <tr>
+          <td>[aeiou]</td>
+          <td>Cualquier vocal en minúsculas</td>
+        </tr>
+        <tr>
+          <td>
+            <strong>[¡0-9]</strong>
+          </td>
+          <td>Todos los caracteres excepto dígitos</td>
+        </tr>
+        <tr>
+          <td>
+            <strong>[0-9!]</strong>
+          </td>
+          <td>Todos los dígitos y el signo de exclamación.</td>
+        </tr>
+        <tr>
+          <td>[a-z]</td>
+          <td>Cualquier letra en minúsculas</td>
+        </tr>
+        <tr>
+          <td>[a-zA-Z]</td>
+          <td>Cualquier letra en minúsculas o mayúsculas</td>
+        </tr>
+      </tbody>
+    </table>
+    <ul>
+      <li>
+        <p>Borre el directorio <code>cimsi</code> mediante el comando <code>rmdir</code>.</p>
+      </li>
+      <li>
+        <p>
+          <strong>Permisos:</strong>
+        </p>
+        <ul>
+          <li>
+            <p>Los ficheros tienen permiso de <strong>lectura</strong> (r),
+<strong>escritura</strong> (w) y <strong>ejecución</strong> (x)</p>
+          </li>
+          <li>
+            <p>Los permisos se pueden asignar:</p>
+            <ul>
+              <li>al propietario del fichero o directorio (se representa con
+la letra <code>u</code>)</li>
+              <li>al grupo al que pertenece el fichero (se representa con
+la letra <code>g</code>)</li>
+              <li>a los usuarios que no son ni el dueño ni el grupo (se
+representa con la letra <code>o</code>)</li>
+              <li>a todos (se representa con la letra <code>a</code>)</li>
+            </ul>
+          </li>
+          <li>El comando <code>chmod</code> permite cambiar los permisos. Por ejemplo:
+            <code>chmod u+x script.sh</code> otorga permiso de ejecución al propietario
+del archivo <code>script.sh</code>. </li>
+          <li>Abra una sesión como <em>root</em> y cree un archivo de texto
+denominado <code>ejemplo.txt</code> en la carpeta <code>/home/alumno</code> del
+usuario alumno que acaba de crear. A continuación, abra una
+sesión como <em>alumno</em> e intente borrar dicho archivo. ¿Puede
+hacerlo? ¿Por qué? </li>
+          <li>Utilice el comando <code>ls -l</code> para mostrar información del archivo
+(entre la que se incluyen los permisos). Por ejemplo:
+            <code>-rwxrw-r--</code> indica que no se trata de un directorio (el primer
+carácter no es una <code>d</code>), el propietario tiene todos los permisos
+(<code>rwx</code>), el grupo tiene permiso de lectura y escritura (<code>rw-</code>) y
+el resto de usuario tiene sólo permiso de lectura (<code>r--</code>). </li>
+          <li>¿Qué permisos tiene asignado el usuario <em>alumno</em> en relación al
+archivo <code>ejemplo.txt</code>? </li>
+          <li>Modifique los permisos como <em>root</em> para que cualquier usuario
+pueda borrar el archivo. Bórrelo desde la sesión <em>alumno</em>. </li>
+          <li>Cree un archivo de texto denominado <code>ejemplo.txt</code> como <em>root</em> y
+ponga como propietario del archivo al usuario <em>alumno</em> mediante
+el comando <code>chown</code>. ¿Puede borrarlo ahora desde la sesión
+<em>alumno</em>? </li>
+        </ul>
+      </li>
+      <li><strong>Más comandos sobre archivos:</strong>
+        <ul>
+          <li>El comando <code>diff</code> permite comparar el contenido de varios
+archivos. Cree un archivo llamado <code>ejemplo1.txt</code> que incluya 5
+líneas de texto, copie dicho archivo como <code>ejemplo2.txt</code>,
+edítelo y modifique 2 de las 5 líneas. Utilice el comando  <code>diff</code>
+para mostrar las diferencias entre ambos archivos.</li>
+          <li>El comando <code>cat</code> permite mostrar el contenido de un archivo.
+Muestre el contenido de los archivos <code>ejemplo1.txt</code> y
+<code>ejemplo2.txt</code>.</li>
+          <li>Dado un archivo, los comandos <code>head</code> y <code>tail</code> permiten mostrar
+las primeras líneas o las últimas, respectivamente. Pruebe
+dichos comandos con los archivos creados anteriormente.</li>
+          <li>El comando <code>sort</code> permite mostrar ordenado el contenido de un
+archivo. Cree un archivo de texto que contenga una lista de
+nombres y muéstrela ordenada alfabéticamente.</li>
+          <li>Cuente el número de líneas de la lista con el comando <code>wc</code>.</li>
+          <li>El comando <code>grep</code> permite buscar patrones en un archivo. Cree un
+archivo de texto que contenga la etiqueta TAG en distintas
+líneas. Muestre el contenido de las líneas que contienen TAG.
+¿Se distingue entre mayúsculas y minúsculas? ¿Qué opción permite
+cambiar este comportamiento?</li>
+          <li>Repita el ejercicio anterior pero mostrando sólo las líneas que
+comienzan por TAG.</li>
+          <li>El comando <code>find</code> permite localizar archivos en una jerarquía de
+directorios. Cree una jerarquía de directorios en el directorio
+de trabajo que contenga varios archivos con extensión <code>txt</code>.
+Busque los archivos con extensión <code>txt</code> utilizando el comando
+<code>find</code>. A continuación, busque todos los archivos con extensión
+<code>txt</code> que existen el sistema de archivos.</li>
+          <li>El comando <code>basename</code> permite obtener el nombre de un archivo
+(sin extensión ni directorios). Por ejemplo: <code>basename /home/alumno/lista.txt</code>
+devuelve <code>lista</code>.</li>
+          <li>Averigüe que hace el comando <code>dirname</code>.</li>
+        </ul>
+      </li>
+      <li><strong>Redirecciones y tuberías:</strong>
+        <ul>
+          <li>La entrada y salida de un comando se pueden redireccionar a un
+fichero con los símbolos &lt; y &gt;, respectivamente. Por
+ejemplo, el siguiente comando almacena la información relativa a
+los archivos del directorio actual en el archivo de texto
+<code>lista\_dir.txt</code>: <code>ls -l &gt; lista\_dir.txt</code>.</li>
+          <li>La tubería es una redirección especial que nos permite enviar la
+salida de un comando como entrada de otro, para ello se usa el
+símbolo <code>|</code>. Teniendo en cuenta esto, ¿qué hace el siguiente
+comando? (nótese que la columna 5 muestra el tamaño del
+archivo): <code>ls -l | sort -r -k 5 | head -n 3</code></li>
+        </ul>
+      </li>
+      <li><strong>Comandos relacionados con la administración:</strong>
+        <ul>
+          <li>El comando <code>whoami</code> muestra el nombre del usuario de la sesión.
+Ejecute dicho comando.</li>
+          <li>El comando <code>who</code> muestra los usuarios conectados. Ejecute dicho
+comando.</li>
+          <li>El comando <code>ps</code> muestra los procesos existentes. Muestre los
+procesos del usuario <em>alumno</em>. Muestre todos los procesos del
+<em>root</em>. Muestre todos los procesos (utilice el formato que
+incluye el nombre del usuario).</li>
+          <li>Lance algún proceso (por ejemplo, <code>bash</code>). Muestre todos los
+procesos. Elimine el proceso <code>bash</code> mediante el comando <code>kill</code>
+(se requiere <em>SIGKILL</em>, es decir la opción -9).</li>
+          <li>¿Es posible eliminar un proceso de <em>root</em> como usuario? Haga la
+prueba con el usuario <em>alumno</em>.</li>
+          <li>Muestre la cantidad memoria usada y libre con el comando <code>free</code>.</li>
+          <li>Muestre la información relacionada con el uso del disco mediante
+el comando <code>df</code>.</li>
+          <li>Muestre la carga de la máquina con el comando <code>top</code>.</li>
+          <li>¿Qué tipo de información existe en el directorio <code>/proc</code>? Por
+ejemplo, muestre el contenido de <code>/proc/cpuinfo</code>.</li>
+        </ul>
+      </li>
+      <li>Programación de la Shell
+        <ul>
+          <li>Léase el tutorial para programar la <em>shell</em> al que se hace
+referencia en la introducción. Ejecute los <em>scripts</em> que se
+aparecen en las secciones 2.1, 5.1, 6.2, 6.3, 6.4, 7.1, 7.2,
+7.3, 7.4 y 10.5.</li>
+        </ul>
+      </li>
+    </ul>
+    <h2 id="ejercicios-a-realizar-por-el-alumno">Ejercicios a realizar por el alumno</h2>
+    <ol>
+      <li>
+        <p>Utilice varios comandos conectados mediante tuberías para mostrar el
+número de líneas de un archivo de texto que no comienzan por un
+espacio en blanco.</p>
+      </li>
+      <li>
+        <p>Utilice varios comandos conectados mediante tuberías para mostrar
+los 3 procesos que más memoria consumen.</p>
+      </li>
+      <li>
+        <p>Utilice varios comandos conectados mediante tuberías para eliminar
+las líneas repetidas de un archivo. Debe utilizar el comando <code>uniq</code>.</p>
+      </li>
+      <li>
+        <p>Programe un <em>script</em> que muestre un error si no se le pasan
+exactamente 2 parámetros. Además, el script debe devolver la cadena
+IGUALES si los dos parámetros son iguales y DISTINTOS en caso
+contrario. En cualquier <em>script</em>, la variable $# contiene el
+número de parámetros y $1, $2, $3, ... contiene el valor de los
+parámetros 1, 2, 3, ..., respectivamente.</p>
+      </li>
+      <li>
+        <p>Programe un <em>script</em> que borre todos los archivos del directorio
+actual que incluyan más de 3 líneas que contengan la etiqueta TAG.</p>
+      </li>
+      <li>
+        <p>
+          <em>
+            <strong class="HITO">HITO</strong>
+          </em> Programe un <em>script</em> que cambie una determinada extensión por otra
+en todos los archivos del directorio actual (por ejemplo: <code>*.txt</code> por
+<code>*.txt2</code>). Para ello, el <em>script</em> recibe como parámetros las
+extensiones origen y destino.</p>
+      </li>
+      <li>
+        <p>Modifique el <em>script</em> anterior para realizar el cambio en cualquier
+subdirectorio.</p>
+      </li>
+      <li>
+        <p>Programe un <em>script</em> que muestre qué pares de archivos con extensión
+<code>txt</code> tienen el mismo contenido en una jerarquía de directorios.</p>
+      </li>
+    </ol>
+  </body>
+</html>

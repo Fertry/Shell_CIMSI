@@ -1,0 +1,762 @@
+<!DOCTYPE html []>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="author" content="MarkdownViewer++" />
+    <title>CIMSI: Práctica 2</title>
+    <script type="application/javascript">
+		function impresora(){
+			document.getElementById("pagestyle").setAttribute("href", "impresora.css");
+		}
+		function pantalla(){
+			document.getElementById("pagestyle").setAttribute("href", "pantalla.css");
+		}		
+	</script>
+	<link id="pagestyle" href="pantalla.css" rel="stylesheet" type="text/css" />    
+  </head>
+  <body>
+  <h1><center> Configuración, Implementación y Mantenimiento de Sistemas Informáticos. Tercer curso. </center>
+  </h1>
+      <div align="right">
+        <input name="boton1" type="submit" id="boton" onClick="impresora()" value="Versión Impresora">
+        <input name="boton2" type="submit" id="boton" onClick="pantalla()" value="Versión Pantalla">      
+      </div>    
+<hr />
+
+<h1 id="practica-3-utilizacion-de-contenedores-docker-bajo-linux">Práctica 2: Utilización de contenedores Docker bajo Linux</h1>
+<p><img src="Img/docker_facebook_share.png" alt="Docker Logo" /></p>
+<h2 id="objetivo">Objetivo</h2>
+<p>Con esta práctica se pretende lograr la familiarización con entornos de virtualización ligera basados en contenedores de aplicación, para el despliegue de microservicios. Concretamente, el objetivo es que el alumno sea capaz de llevar a cabo las siguientes tareas:</p>
+<ul>
+<li>Instalación de Docker.</li>
+<li>Uso básico de contenedores.</li>
+<li>Gestión de imágenes para Docker.</li>
+<li>Configuración de redes y de almacenamiento para los contenedores.</li>
+<li>Medidas de rendimiento.</li>
+</ul>
+<h2 id="instalacion-de-docker">Instalación de Docker</h2>
+<p>Esta práctica se va a proporcionar una máquina virtual Ubuntu18.04 Server en la que previamente se ha instalado Docker. No obstante, si desea realizar la instalación en una máquina virtual nueva, o bien desea instalar Docker en un host con un sistema operativo Ubuntu, siga los siguientes pasos:</p>
+<p>La instalación se va a llevar a cabo mediante el siguiente comando. En este caso, bajo Ubuntu 18.04:
+<code>apt install docker.io</code></p>
+<h3 id="comprobacion-de-la-instalacion">Comprobación de la instalación</h3>
+<p>Comprobamos la instalación, obteniendo la versión, utilizando un usuario sin priveligios, por ejemplo, <code>docker</code>:</p>
+<pre class="Ventana_codigo"><code class="language-shell">docker@ubuntu:~$ docker -v
+Docker version 18.09.5, build e8ff056
+</code></pre>
+<pre class="Ventana_codigo"><code class="language-shell">docker@ubuntu:~$ docker info
+Containers: 0
+ Running: 0
+ Paused: 0
+ Stopped: 0
+Images: 0
+Server Version: 18.09.5
+Storage Driver: overlay2
+ Backing Filesystem: extfs
+ Supports d_type: true
+ Native Overlay Diff: truedocmer 
+Logging Driver: json-file
+Cgroup Driver: cgroupfs
+Plugins:
+ Volume: local
+ Network: bridge host macvlan null overlay
+ Log: awslogs fluentd gcplogs gelf journald json-file local logentries splunk syslog
+Swarm: inactive
+Runtimes: runc
+Default Runtime: runc
+Init Binary: docker-init
+containerd version:
+runc version: N/A
+init version: v0.18.0 (expected: fec3683b971d9c3ef73f284f176672c44b448662)
+Security Options:
+ apparmor
+ seccomp
+  Profile: default
+Kernel Version: 4.15.0-51-generic
+Operating System: Ubuntu 18.04.2 LTS
+OSType: linux
+Architecture: x86_64
+CPUs: 2
+Total Memory: 3.852GiB
+Name: ubuntu
+ID: PJRX:35G2:HU4B:Z74O:7VKN:CVD4:OBSJ:3D6B:KWK7:KD75:D2XM:EXRT
+Docker Root Dir: /var/lib/docker
+Debug Mode (client): false
+Debug Mode (server): false
+Registry: https://index.docker.io/v1/
+Labels:
+Experimental: false
+Insecure Registries:
+ 127.0.0.0/8
+Live Restore Enabled: false
+
+WARNING: No swap limit support
+</code></pre>
+<p>Para evitar errores de permisos (y el uso de <code>sudo</code>) hay que añadir el usuario al grupo <code>docker</code>.</p>
+<pre class="Ventana_codigo"><code># adduser docker docker
+</code></pre>
+<h3 id="comprobacion-de-la-instalacion-de-docker">Comprobación de la instalación de Docker</h3>
+<p>Ejecutamos una instalación simple de Docker:</p>
+<pre class="Ventana_codigo"><code class="language-shell">docker@ubuntu:~$ docker run hello-world
+Unable to find image 'hello-world:latest' locally
+latest: Pulling from library/hello-world
+1b930d010525: Pull complete
+Digest: sha256:0e11c388b664df8a27a901dce21eb89f11d8292f7fca1b3e3c4321bf7897bffe
+Status: Downloaded newer image for hello-world:latest
+
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+
+To generate this message, Docker took the following steps:
+ 1. The Docker client contacted the Docker daemon.
+ 2. The Docker daemon pulled the &quot;hello-world&quot; image from the Docker Hub.
+    (amd64)
+ 3. The Docker daemon created a new container from that image which runs the
+    executable that produces the output you are currently reading.
+ 4. The Docker daemon streamed that output to the Docker client, which sent it
+    to your terminal.
+
+To try something more ambitious, you can run an Ubuntu container with:
+ $ docker run -it ubuntu bash
+
+Share images, automate workflows, and more with a free Docker ID:
+ https://hub.docker.com/
+
+For more examples and ideas, visit:
+ https://docs.docker.com/get-started/
+</code></pre>
+<p>Listamos la imagen descargada:</p>
+<pre class="Ventana_codigo"><code class="language-shell">docker@ubuntu:~$ docker image ls
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+hello-world         latest              fce289e99eb9        5 months ago        1.84kB
+</code></pre>
+<p>Listamos el contenedor <code>hello-world</code> generado por la imagen, que finaliza tras mostrar el mensaje &quot;Hello from Docker!
+&quot;. Si permaneciera en ejecución, no sería necesaria la opción <code>--all</code>.</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu:~$ docker container ls --all
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS                     PORTS               NAMES
+733d58310bb4        hello-world         &quot;/hello&quot;            4 minutes ago       Exited (0) 4 minutes ago                       mystifying_brattain
+
+</code></pre>
+<h2 id="ejecucion-de-contenedores">Ejecución de contenedores</h2>
+<h3 id="ejecuta-un-contenedor-interactivo-de-debian">Ejecuta un contenedor interactivo de Debian</h3>
+<p>Es posible ejecutar un contenedor con una versión de Linux diferente a la que
+se ejecuta en el <em>Docker host</em>.
+Por ejemplo, vamos a ejecutar un contenedor de Debian 9 y acceder a su <em>shell</em>.</p>
+<pre class="Ventana_codigo"><code>docker container run --interactive --tty --rm debian bash
+</code></pre>
+<p>En este ejemplo, estamos indicado tres parámetros::</p>
+<ul>
+<li><p>--interactive: indica que se quiere una sesión interactiva.</p>
+</li>
+<li><p>--tty: reserva un pseudo-tty.</p>
+</li>
+<li><p>--rm: indica a Docker que elimine el contenedor cuando su ejecución haya finalizado.</p>
+</li>
+</ul>
+<p>Los dos primeros parámetros permiten interactuar con el contenedor. También le decimos al contenedor que ejecute el comando <code>bash</code> (el interprete de comandos) como proceso principal.</p>
+<p>A modo de prueba, se pueden ejecutar los siguientes comandos dentro del contenedor:</p>
+<pre class="Ventana_codigo"><code>ls /
+
+ps aux
+
+cat /etc/issue
+</code></pre>
+<p>Como podrá ver, el segundo comando no funcionará, pues en Debian no funciona el comando. Cuando ejecute el tercero, se dará cuenta de que la versión del sistema operativo es Debian y no Ubuntu (que es la versión del SisOp de la máquina virtual).</p>
+<p>Para abandonar la sesión de <em>shell</em>, teclee <code>exit</code>, lo que terminará el proceso <code>bash</code> y finalizará el contenedor. El flag <code>--rm</code> causará la destrucción del contenedor al detener su ejecución.</p>
+<h3 id="ejecutar-un-contenedor-mysql-en-segundo-plano">Ejecutar un contenedor MySQL en segundo plano</h3>
+<p>La mayor parte de las aplicaciones en contenedores se ejecuta en segundo plano (<em>background</em>). Vamos a emplear MySQL como ejemplo.</p>
+<p>Ejecuta un contenedor MySQL con el siguiente comando:</p>
+<pre class="Ventana_codigo"><code>docker container run  --detach --name mydb -e MYSQL_ROOT_PASSWORD=my-secret-pw mysql:latest
+</code></pre>
+<ul>
+<li><p><code>--detach</code> ejecuta el contenedor en segundo plano.</p>
+</li>
+<li><p><code>--name</code> nombra el contenedor como <strong>mydb</strong>.</p>
+</li>
+<li><p><code>-e</code> crear y asigna valor una variable de entorno para especificar la contraseña de <em>root</em>.</p>
+</li>
+</ul>
+<h3 id="sobre-la-identificacion-de-contenedores">Sobre la Identificación de Contenedores</h3>
+<p>En este punto cabe destacar, que hay tres formas de identificar un contenedor:</p>
+<pre class="Ventana_codigo"><code>  **Identifier type**     **Example value**
+  ----------------------- --------------------------------------------------------------------
+  UUID long identifier    “f78375b1c487e03c9438c729345e54db9d20cfa2ac1fc3494b6eb60872e74778”
+  UUID short identifier   “f78375b1c487”
+  Name                    “evil\_ptolemy”
+</code></pre>
+<p><strong>Name (--name)</strong></p>
+<p>Si no se asigna un nombre al contenedor con la opción <code>–name</code>, entonces el daemon generará una cadena aleatoria. Definir un nombre puede ser una forma útil de agregar significado a un contenedor. De hecho, especificarlo, permite usarlo para referenciar el contenedor dentro de una red Docker.</p>
+<p>Se puede comprobar lo que está sucediendo con tus contenedores utilizando un par de comandos: <strong>docker container logs</strong> y <strong>docker container top</strong></p>
+<p>Pueden consultarse los logs del contenedor MYSQL:</p>
+<pre class="Ventana_codigo"><code>docker container logs mydb
+</code></pre>
+<p>También es posible listar los procesos que se están ejecutando dentro del contenedor:</p>
+<pre class="Ventana_codigo"><code>docker container top mydb
+</code></pre>
+<p>Debería listarse el daemon daemon (mysqld), que está ejecutándose en el contenedor.</p>
+<p><strong>Obtener la versión de MySQL</strong></p>
+<p>Ejecutar <strong>docker container exec</strong> te permite ejecutar un comando dentro de un contenedor. En este ejemplo, lo utilizaremos para ejecutar el comando de mysql: <code>mysql --user=root --password=$MYSQL_ROOT_PASSWORD --version</code> dentro del contenedor MySQL.</p>
+<pre class="Ventana_codigo"><code>docker exec -it mydb mysql --user=root --password=$MYSQL_ROOT_PASSWORD --version
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql  Ver 8.0.16 for Linux on x86_64 (MySQL Community Server - GPL)
+</code></pre>
+<p>También se puede utilizar para conectar a un proceso de shell dentro de un contenedor ya en ejecución. Así, ejecutando el siguiente comando, se accederá a una shell interactiva dentro del contenedor MySQL</p>
+<pre class="Ventana_codigo"><code>docker exec -it mydb sh
+</code></pre>
+<p>Observa que el prompt del shell ha cambiado. Esto es debido a que tu shell está ahora conecatada a la del proceso que se está ejecutando en tu contenedor.</p>
+<p>A continuación, ejecuta directamente en la shell el comando para obtener la versión:</p>
+<pre class="Ventana_codigo"><code>mysql --user=root --password=$MYSQL_ROOT_PASSWORD --version
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql  Ver 8.0.16 for Linux on x86_64 (MySQL Community Server - GPL)
+</code></pre>
+<p>Comprueba que el número de versión obtenido ejecutando directamente este comando de mysql en la shell coincide con el obtenido anteriormente con docker exec.</p>
+<p>Teclea <strong>exit</strong> para abandonar la sesión de shell interactiva.</p>
+<h2 id="uso-basico-de-contenedores">Uso básico de contenedores</h2>
+<h3 id="definir-un-contenedor-con-dockerfile">Definir un contenedor con <code>Dockerfile</code></h3>
+<p>Un fichero Dockerfile define lo que sucede en el entorno dentro del contenedor. El acceso a los recursos como los interfaces de red y drivers de disco está virtualizado en el entorno del contenedor, que está aislado del resto del sistema, por lo que se requiere asociar los puertos con el exterior, así como especificar qué ficheros se quieren copiar al entorno del contenedor. La ventaja es que después de hacerlo, la app construida a partir del Dockerfile se comporta exactamente igual independientemente de dónde se ejecute.</p>
+<p>Comenzaremos creando un directorio vacío en la máquina virtual y, en ese nuevo directorio, crearemos un fichero llamado <code>Dockerfile</code>, copiando y pegando el siguiente contenido. Observa los comentarios que explican cada paso en el fichero.</p>
+<pre class="Ventana_codigo"><code class="language-shell"># Use an official Python runtime as a parent image
+FROM python:2.7-slim
+
+# Set the working directory to /app
+WORKDIR /app
+
+# Copy the current directory contents into the container at /app
+COPY . /app
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --trusted-host pypi.python.org -r requirements.txt
+
+# Make port 80 available to the world outside this container
+EXPOSE 80
+
+# Define environment variable
+ENV NAME World
+
+# Run app.py when the container launches
+CMD [&quot;python&quot;, &quot;app.py&quot;]
+</code></pre>
+<p>En este <code>Dockerfile</code> se hace referencia a dos ficheros
+que todavía no han sido creados: <code>app.py</code> y <code>requirements.txt</code>.</p>
+<h3 id="la-aplicacion-en-si">La aplicación en sí</h3>
+<p>En la misma carpeta, crea dos ficheros más <code>app.py</code> y <code>requirements.txt</code>. Con esto se completa la aplicación que es bastante simple. De este modo, cuando el fichero <code>Dockerfile</code> se utiliza para construir una imagen, ambos ficheros  están disponibles debido a que el comando <code>COPY</code> del fichero <code>Dockerfile</code> y la salida de <code>app.py</code> son accesibles por HTTP  a través del comando <code>EXPOSE</code>.</p>
+<p><strong>Nota:</strong> <em>Flask</em> es un framework para el desarrollo de aplicaciones web basado en python. <em>Redis</em> es un motor de base de datos en memoria.</p>
+<p><em><strong>requirements.txt</strong></em></p>
+<pre class="Ventana_codigo"><code>Flask
+Redis
+</code></pre>
+<p><em><strong>app.py</strong></em></p>
+<pre class="Ventana_codigo"><code class="language-python">from flask import Flask
+from redis import Redis, RedisError
+import os
+import socket
+
+# Connect to Redis
+redis = Redis(host=&quot;redis&quot;, db=0, socket_connect_timeout=2, socket_timeout=2)
+
+app = Flask(__name__)
+
+@app.route(&quot;/&quot;)
+def hello():
+    try:
+        visits = redis.incr(&quot;counter&quot;)
+    except RedisError:
+        visits = &quot;&lt;i&gt;cannot connect to Redis, counter disabled&lt;/i&gt;&quot;
+
+    html = &quot;&lt;h3&gt;Hello {name}!&lt;/h3&gt;&quot; \
+           &quot;&lt;b&gt;Hostname:&lt;/b&gt; {hostname}&lt;br/&gt;&quot; \
+           &quot;&lt;b&gt;Visits:&lt;/b&gt; {visits}&quot;
+    return html.format(name=os.getenv(&quot;NAME&quot;, &quot;world&quot;), hostname=socket.gethostname(), visits=visits)
+
+if __name__ == &quot;__main__&quot;:
+    app.run(host='0.0.0.0', port=80)
+</code></pre>
+<h3 id="construyendo-la-app">Construyendo la app</h3>
+<p>En el directorio deberíamos tener los siguientes ficheros:</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu:~/img$ ls
+app.py  Dockerfile  requirements.txt
+</code></pre>
+<p>Ejecutamos el comando <code>build</code> para generar la imagen de Docker. Podemos asignarle un nombre con la opción  <code>--tag</code> (<code>-t</code>).</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu:~/img$ docker build --tag=friendlyhello .
+Sending build context to Docker daemon   5.12kB
+Step 1/7 : FROM python:2.7-slim
+2.7-slim: Pulling from library/python
+743f2d6c1f65: Pull complete
+. . . . .
+Successfully built da4b5e890aa5
+Successfully tagged friendlyhello:latest
+</code></pre>
+<p>La imagen queda almacenada en el registro de imágenes local de Docker.</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu:~/img$ docker image ls
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+friendlyhello       latest              da4b5e890aa5        2 minutes ago       131MB
+python              2.7-slim            eb40dcfcbc42        4 weeks ago         120MB
+hello-world         latest              fce289e99eb9        5 months ago        1.84kB
+</code></pre>
+<h3 id="ejecutar-la-app">Ejecutar la app</h3>
+<p>Ejecuta la app asociando el puerto 4000 de la máquina local al puerto 80 publicado por el contenedor. Utiliza para ello la opción -p <host-port>:<container-port>:</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu:~/img$ docker run -p 4000:80 friendlyhello
+ * Serving Flask app &quot;app&quot; (lazy loading)
+ * Environment: production
+   WARNING: This is a development server. Do not use it in a production deployment.
+   Use a production WSGI server instead.
+ * Debug mode: off
+ * Running on http://0.0.0.0:80/ (Press CTRL+C to quit)
+</code></pre>
+<p>Nos muestra un mensaje indicando que Python sirve la app en  <a href="http://0.0.0.0:80/">http://0.0.0.0:80/</a>. Pero el mensaje procede del interior del contenedor que desconoce que el puerto 80 está mapeado al 4000. Por tanto la URL correcta es:  <a href="http://0.0.0.0:4000/">http://0.0.0.0:4000/</a>. Abre la URL con un navegador para acceder a contenido o, alternativamente, emplea el comando <code>curl</code>:</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu:~/img$ curl http://0.0.0.0:4000
+&lt;h3&gt;Hello World!&lt;/h3&gt;&lt;b&gt;Hostname:&lt;/b&gt; 913246c1c0cb&lt;br/&gt;&lt;b&gt;Visits:&lt;/b&gt; &lt;i&gt;cannot connect to Redis, counter disabled&lt;/i&gt;
+</code></pre>
+<p>Para salir teclea <code>CTRL+C</code></p>
+<p>Con el siguiente comando, podrá ejecutarla en segundo plano (<em><strong>detached mode</strong></em>). Nótese que esta vez devuelve el identificador del contenedor para la app.</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu:~/img$ docker run -d -p 4000:80 friendlyhello
+913246c1c0cb4f72f4d9211811fd91912278694155b6bf1448ae4e6f043e4fd2
+</code></pre>
+<p>Si tecleamos:</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu:~/img$ docker container ls
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS                  NAMES
+913246c1c0cb        friendlyhello       &quot;python app.py&quot;     2 minutes ago       Up 2 minutes        0.0.0.0:4000-&gt;80/tcp   amazing_ride
+</code></pre>
+<p>Se obtiene más información, incluyendo el id abreviado y que coincide con el devuelto por la petición HTTP.</p>
+<p>A continuación, detenemos el contenedor utiliza su identificador:</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu:~/img$ docker container stop 913246c1c0cb
+913246c1c0cb
+</code></pre>
+<p>Finalmente, es conveniente aclarar que el problema de utilizar un puerto fijo es que se puede ejecutar una única instancia.
+Utilizando la opción –p 80 se expone, aleatoriamente, en un puerto que esté disponible. Por ejemplo:</p>
+<p>docker@ubuntu:~/img$ docker run -d -p 80 friendlyhello
+e59bd765341d025131b309cf577ca088406d1470a1a97b420bf61f92ff56e5d3</p>
+<p>De hecho, se puede desplegar sucesivas veces y comprobar qué puerto ha sido asignado a cada instancia:</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu:~/img$ docker ps
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                   NAMES
+e59bd765341d        friendlyhello       &quot;python app.py&quot;          6 seconds ago       Up 5 seconds        0.0.0.0:32772-&gt;80/tcp   nostalgic_sammet
+832319ee9c61        friendlyhello       &quot;python app.py&quot;          10 minutes ago      Up 10 minutes       0.0.0.0:32771-&gt;80/tcp   vigorous_chatelet
+b3d3f3817fd7        friendlyhello       &quot;python app.py&quot;          11 minutes ago      Up 11 minutes       0.0.0.0:32770-&gt;80/tcp   loving_neumann
+2ff4f8b6d9b9        friendlyhello       &quot;python app.py&quot;          12 minutes ago      Up 12 minutes       
+</code></pre>
+<p>Puede parar la ejecución de los contenedores con el comando <code>docker container stop &lt;nombre del contenedor&gt;</code> en vez de emplear el id del contenedor, que es algo mas tedioso.</p>
+<h2 id="asegurando-la-supervivencia-de-contenedores-con-politicas-de-reinicio">Asegurando la supervivencia de contenedores con políticas de reinicio.</h2>
+<p>Los contenedores, como cualquier proceso, pueden interrumpir su ejecución por algún error.
+Este escenario explora como se pueden mantener vivos los contenedores y reinicarlos en caso de que finalice su ejecución de forma inesperada.</p>
+<p>Docker considera que cualquier contenedor que finalice con un código de salida distinto de cero, ha interrumpido su ejecución.
+Por defecto, un contenedor en ese estado permanece detenido.</p>
+<p>Si se listan todos los contenedores, incluyendo los detenidos, se listan los que han interrumpido su ejecución: <code>docker ps -a</code></p>
+<p>Vamos a experimentar construyendo un contenedor que ejecute un script que al cabo de 60 s, finalice con código de salida 1.
+Con este fin, en nuestro directorio local, comenzaremos creando el fichero del script, <code>error.sh</code> y el DockerFile:</p>
+<pre class="Ventana_codigo"><code>error.sh
+</code></pre>
+<pre class="Ventana_codigo"><code>#/bin/bash
+sleep 60
+exit 1
+</code></pre>
+<pre class="Ventana_codigo"><code>DockerFile
+</code></pre>
+<pre class="Ventana_codigo"><code class="language-shell">FROM debian:latest
+ADD error.sh /
+CMD /bin/bash /error.sh
+</code></pre>
+<p>Generamos, a continuación, la imagen Docker:</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu-2:~/restart$ ddocker build --tag=testrestartpolicy .
+Sending build context to Docker daemon  6.144kB
+Step 1/3 : FROM debian:latest
+ ---&gt; e1de74e67cc7
+Step 2/3 : ADD error.sh /
+ ---&gt; 9e115697ad6f
+Step 3/3 : CMD /bin/bash error.sh
+ ---&gt; Running in d1184b2dadc2
+Removing intermediate container d1184b2dadc2
+ ---&gt; 41ebd7d0a9df
+Successfully built 41ebd7d0a9df
+Successfully tagged testrestartpolicy:latest
+
+</code></pre>
+<p>Desplegamos el contenedor:</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu-2:~/restart$  docker run -d testrestartpolicy
+2c7ba424d0d812b0d84fbbbdf5c90084d00b1a153de461648f409c84b133be6e
+
+docker@ubuntu-2:~/restart$
+</code></pre>
+<p>Con el comando <code>docker ps</code> no se lista porque el contenedor ha detenido su ejecución.
+Hay que utilizar el comando <code>docker ps -a</code>:</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu-2:~/restart$ docker ps -a
+CONTAINER ID        IMAGE                                COMMAND                  CREATED              STATUS                        PORTS                   NAMES
+2c7ba424d0d8        testrestartpolicy                    &quot;/bin/sh -c '/bin/ba…&quot;   About a minute ago   Exited (1) 26 seconds ago 
+....
+</code></pre>
+<p>En la salida mostrada, puede comprobarse en el campo STATUS que ha finalizado con código 1: <code>Exited (1)</code>
+Docker puede automáticamente reintentar el lanzamiento de un contenedor antes de detenerlo.</p>
+<p>La opción <code>--restart=on-failure:n</code> permite especificar el número de veces que Docker intentaría reiniciarlo.
+En el siguiente ejemplo, se intentaría 3 veces antes de detenerlo.</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu-2:~/restart$ docker run -d --name=r3 --restart on-failure:3 testrestartpolicy
+62f2749aacd06b70b008ed886dcbdb4d4b94d654083d9d240acc5e36c6a64047
+</code></pre>
+<p>Podemos comprobar con el siguiente comando que, habiendo sido desplegado hace 3 minutos el contenedor está siendo reiniciado. Esto correspondería al tercer y último reinicio:</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu-2:~/restart$ docker ps -n 1
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS                                  PORTS               NAMES
+41e9b6ee5aab        testrestartpolicy   &quot;/bin/sh -c '/bin/ba…&quot;   3 minutes ago       Restarting (1) Less than a second ago                       r3
+</code></pre>
+<p>Repitiendo el comando, una vez más, se constata que el contenedor está en ejecución 2 segundos después del tercer y último reinicio:</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu-2:~/restart$ docker ps -n 1
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS               NAMES
+41e9b6ee5aab        testrestartpolicy   &quot;/bin/sh -c '/bin/ba…&quot;   3 minutes ago       Up 2 seconds                            r3
+docker@ubuntu-2:~/restart$ 
+</code></pre>
+<p>Adicionalmente existe la opción de reiniciar siempre un contenedor que interrumpe su ejecución. Para ello se utiliza el flag: <code>--restart=always</code>
+En ese caso, Docker lo hará hasta que se indique explícitamente que se detenga.</p>
+<h2 id="creando-redes-entre-contenedores-usando-docker">Creando redes entre contenedores usando Docker</h2>
+<p>El escenario permite experimentar con la creación de una red docker,
+permitiendo comunicación entre contenedores.</p>
+<p>El enfoque alternativo a la definción de enlaces entre dos contenedores
+es crear una red docker a la que los contenedores se conectan. La red
+tiene atributos similares a una red física, permitiendo a los
+contenedores “ir y venir” con más grados de libertad que cuando se
+utilizan enlaces.</p>
+<h3 id="creacion-de-redes">Creación de Redes</h3>
+<p>El primer paso es crear una red utiliando la interfaz de comandos CLI.
+Esta red nos permitirá contectar múltiples contenedores, capaces de
+descubrirse entre sí.</p>
+<p>En este ejemplo, vamos a empezar creando una red denominada <strong>mired</strong>.</p>
+<pre class="Ventana_codigo"><code>docker network create mired
+0c4b03259731e3b6896548f058c593de133a79475e043819d2d5ed714a1cd782
+</code></pre>
+<h3 id="conexion-a-la-red">Conexión a la red</h3>
+<p>A continuación, lanzamos dos contenedores (el contenedor <code>alpine</code> es una versión básica de Linux) con consola interactiva, en segundo plano (opciones tid):</p>
+<pre class="Ventana_codigo"><code>docker run -tid --name=a1 alpine
+docker run -tid --name=a2 alpine
+</code></pre>
+<p>y los conectamos a la red creada en el paso anterior:</p>
+<pre class="Ventana_codigo"><code>docker network connect mired a1
+docker network connect mired a2
+</code></pre>
+<h3 id="comprobacion-de-la-red">Comprobación de la red</h3>
+<p>Las redes docker, a diferencia de los enlaces, se caracterizan por tener
+el mismo comportamiento que las redes tradicionales, en las que los
+nodos se pueden añadir y desconectar.</p>
+<p>Cabe destacar que, a diferencia de lo que ocurre con los enlaces, Docker no asigna variables de
+entorno ni actualiza los <em>hosts file</em> de los contenedores.
+En su lugar, la forma en la que los contenedores se pueden comunicar es
+a través de Embedded DNS Server. Este servidor DNS es asignado a todos
+los contenedores a través de la IP 127.0.0.11 y añadido en el fichero
+<code>resolv.conf</code>.</p>
+<p>Con nuestra red creada, podemos usar la interfaz CLI para explorar los
+detalles. Por ejemplo, el siguiente comando listará todas las redes de
+nuestro host:</p>
+<pre class="Ventana_codigo"><code>docker network ls
+NETWORK ID          NAME                DRIVER              SCOPE
+a53eb2439d1b        bridge              bridge              local
+26a73a47f213        host                host                local
+97b9ed389941        mired               bridge              local
+baf99c4a77a1        none                null                local
+</code></pre>
+<p>También podemos examinar la red para ver qué contenedores están
+conectados y cuáles son sus direcciones IP.</p>
+<pre class="Ventana_codigo"><code>docker network inspect mired
+</code></pre>
+<pre class="Ventana_codigo"><code class="language-json">[
+    {
+        &quot;Name&quot;: &quot;mired&quot;,
+        &quot;Id&quot;: &quot;97b9ed3899417cfe598836fe78272c5ceb3f0e6211524958cd8f9158c6e1a294&quot;,
+        &quot;Created&quot;: &quot;2019-06-15T13:44:26.882263234-04:00&quot;,
+        &quot;Scope&quot;: &quot;local&quot;,
+        &quot;Driver&quot;: &quot;bridge&quot;,
+        &quot;EnableIPv6&quot;: false,
+        &quot;IPAM&quot;: {
+            &quot;Driver&quot;: &quot;default&quot;,
+            &quot;Options&quot;: {},
+            &quot;Config&quot;: [
+                {
+                    &quot;Subnet&quot;: &quot;172.21.0.0/16&quot;,
+                    &quot;Gateway&quot;: &quot;172.21.0.1&quot;
+                }
+            ]
+        },
+        &quot;Internal&quot;: false,
+        &quot;Attachable&quot;: false,
+        &quot;Ingress&quot;: false,
+        &quot;ConfigFrom&quot;: {
+            &quot;Network&quot;: &quot;&quot;
+        },
+        &quot;ConfigOnly&quot;: false,
+        &quot;Containers&quot;: {
+            &quot;54f818621fbc32f73c4adddc6af1a4ae873172250cf9aaaaaa6210a5772321b3&quot;: {
+                &quot;Name&quot;: &quot;a1&quot;,
+                &quot;EndpointID&quot;: &quot;31ade75a89daeb3f2deb82c3358521d7c2ea7b83bc0a5c35b851c5ec54b9e759&quot;,
+                &quot;MacAddress&quot;: &quot;02:42:ac:15:00:02&quot;,
+                &quot;IPv4Address&quot;: &quot;172.21.0.2/16&quot;,
+                &quot;IPv6Address&quot;: &quot;&quot;
+            },
+            &quot;679d3e7111011c74318c5bd5699e9397d5dfe5147bd9c62c28c387186c42648f&quot;: {
+                &quot;Name&quot;: &quot;a2&quot;,
+                &quot;EndpointID&quot;: &quot;04cec9777dd79840ea0469c0c308802af723eb9fa19406df2eb5dad281ef3804&quot;,
+                &quot;MacAddress&quot;: &quot;02:42:ac:15:00:03&quot;,
+                &quot;IPv4Address&quot;: &quot;172.21.0.3/16&quot;,
+                &quot;IPv6Address&quot;: &quot;&quot;
+            }
+        },
+        &quot;Options&quot;: {},
+        &quot;Labels&quot;: {}
+    }
+]
+</code></pre>
+<p>Podemos comprobar que aparecen dos contenedores conectados a la red: a1 y a2 con direcciones IP 172.21.0.2/16 y 172.21.0.3/16, respectivamente.</p>
+<h3 id="verificando-comunicacion-entre-contenedores">Verificando comunicación entre contenedores</h3>
+<p>A continuación utilizamos el comando <strong>docker attach</strong> para agregar E/S estándar (es decir, que podamos acceder a su consola de comandos) al contenedor en ejecución:</p>
+<pre class="Ventana_codigo"><code>docker attach a1
+</code></pre>
+<p>Y ejecutamos el comando <strong>ping</strong> para comprobar la conectividad:</p>
+<pre class="Ventana_codigo"><code>ping a2
+</code></pre>
+<p>Para finalizar la prueba de conexión, sin finalizar la ejecución del contenedor ejecutamos la secuencia de escape <code>Ctrl+P</code> + <code>Ctrl+Q</code></p>
+<h3 id="desconexion-de-contenedores">Desconexión de contenedores</h3>
+<p>El siguiente comando desconecta el contenedor <code>a1</code> de la red frontend-network:</p>
+<pre class="Ventana_codigo"><code>docker network disconnect mired a1
+</code></pre>
+<h2 id="persistencia-de-datos-utilizando-volumenes">Persistencia de Datos utilizando volúmenes</h2>
+<p>En este escenario se va a trabajar cómo utilizar volúmenes Docker para tener datos persistentes dentro de contenedores.
+Los volúmenes Docker permiten compartir  directorios entre contenedores y diferentes versiones de contenedores.</p>
+<p>Los volúmenes Docker son creados y asigmados cuando se arrancan los contenedores. Los volúmenes de datos te permien mapear un directorio del
+host a un contenedor para compartir datos.</p>
+<p>Este mapeo es bidireccional. Permite que los datos almacenados en el host sean accedidos desde el interior del contenedor.
+También significa que los datos almacenados en el contenedor permanezarán en el host.</p>
+<p>Una característica importante es que un volumen no incrementa el tamaño de los contenedores que lo utilizan y el contenido del volumen existe fuera del ciclo de vida de un contenedor dado.</p>
+<p>Se va a trabajar un ejemplo de un contenedor MySQL para mostrar cómo almacenar los datos de forma persistente,
+creando una base de datos de ejemplo a la que, después de eliminar el contenedor, podrá acceder un contenedor nuevo.</p>
+<p>Hay dos formas de utilizar volúmenes:</p>
+<ul>
+<li>Flag <code>-v</code> o <code>--volume</code></li>
+<li>Flag <code>--mount</code></li>
+</ul>
+<p>Inicalmente, el flag -v se usaba para contenedores independientes (standalone) y --mount para servicios swarm.
+Sin embargo, a partir de Docker 17.06, es factible utilizar --mount con contenedores independientes.
+En general, --mount es más explícito y detallado. La principal diferencia es que la sintaxis -v combina todos los parámetros en un único campo, mientras que --mount las separa-
+Para más detalles véase: <a href="https://docs.docker.com/storage/volumes/">https://docs.docker.com/storage/volumes/</a></p>
+<p>A continuación se indican los pasos para el flag <code>--mount</code>:</p>
+<p><strong>1.- Eliminamos los volúmenes temporales que no están siendo utilizados</strong></p>
+<pre class="Ventana_codigo"><code>docker@ubuntu-2:~$ docker volume prune
+WARNING! This will remove all local volumes not used by at least one container.
+Are you sure you want to continue? [y/N] y
+Deleted Volumes:
+db-data
+mysql-db-data
+
+Total reclaimed space: 356.7MB
+</code></pre>
+<p><strong>2.- Creamos un volumen denominado <code>db-data</code></strong></p>
+<pre class="Ventana_codigo"><code>docker@ubuntu-2:~$ docker volume create db-data
+db-data
+</code></pre>
+<p><strong>3.-Comprobamos la existencia del volumen creado en el paso 2</strong></p>
+<pre class="Ventana_codigo"><code>docker@ubuntu-2:~$ docker volume ls
+DRIVER              VOLUME NAME
+local               4f969d6acdd7cd99514aa34a29306ab1af1920ba79adb3a88bf4b60b25ba16a2
+local               49fc6907796f19fb73510b2a9dd19c9bf0a78711dc0ab9fed85bdcd5a6d76c89
+local               d698a554156905e29a3acef2c5de541fe57746db18e60fa1157de55172c38af8
+local               db-data
+</code></pre>
+<p><strong>4.-Desplegamos un contenedor de MySQL, denominado <code>mydb</code>, montando un volumen con el flag <code>--mount</code></strong></p>
+<pre class="Ventana_codigo"><code>docker@ubuntu-2:~$  docker run -d --name mydb  -e MYSQL_ROOT_PASSWORD=my-secret-pw --mount src=db-data,dst=/var/lib/mysql mysql
+e9ecd9c39988dd9496d9f266a06119d914278459344909a864f6db1519566707
+</code></pre>
+<p>El path dado en el comando <code>/var/lib/mysql</code> indica la ruta dentro del contenedor. En realidad el contenedor se ubica en el host en un directorio que cuelga de los ficheros de trabajo de docker: <code>/var/lib/docker/volumes/db_data/_data</code> al que no podemos acceder por estar protegido con contraseña.</p>
+<p><strong>5.- Accedemos al contenedor para poder interactuar y ejecutar comandos SQL</strong> utilizando el comando <code>docker exec -it mydb mysql -p</code>
+A continuación, tras introducir la password <code>my-secret-pw</code>:</p>
+<ul>
+<li>Creamos una base de datos: <code>create database demo;</code></li>
+<li>Mostramos la base de datos creada: <code>show databases;</code>
+Salimos con <code>quit</code></li>
+</ul>
+<pre class="Ventana_codigo"><code>docker@ubuntu-2:~$ docker exec -it mydb mysql -p
+Enter password: 
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 8
+Server version: 8.0.16 MySQL Community Server - GPL
+
+Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql&gt; create database demo;
+Query OK, 1 row affected (0.03 sec)
+
+mysql&gt; show databases;
++--------------------+
+| Database           |
++--------------------+
+| demo               |
+| information_schema |
+| mysql              |
+| performance_schema |
+| sys                |
++--------------------+
+5 rows in set (0.03 sec)
+
+mysql&gt; quit
+Bye
+</code></pre>
+<p><strong>6.- Eliminamos el contenedor</strong></p>
+<pre class="Ventana_codigo"><code>docker@ubuntu-2:~$ docker rm -f mydb
+mydb
+</code></pre>
+<p><strong>7.- Desplegamos un nuevo contenedor, al igual que en el paso 4.</strong></p>
+<pre class="Ventana_codigo"><code>docker@ubuntu-2:~$ docker run -d --name mydb  -e MYSQL_ROOT_PASSWORD=my-secret-pw --mount src=db-data,dst=/var/lib/mysql mysql
+a84e47afb9633009e130fa47a805b2b664be99062e2ed8052fa1dae701cd8323
+</code></pre>
+<p><strong>8.- Accedemos al contenedor para poder interactuar y ejecutar comandos SQL, al igual que en el paso 5.</strong>
+A continuación, tras introducir la password <code>my-secret-pw</code>:
+Mostramos la base de datos creada para el contenedor anterior  <code>show databases</code> y salimos con <code>quit</code></p>
+<pre class="Ventana_codigo"><code>docker@ubuntu-2:~$ docker exec -it mydb mysql -p
+Enter password: 
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 9
+Server version: 8.0.16 MySQL Community Server - GPL
+
+Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql&gt; show databases;
++--------------------+
+| Database           |
++--------------------+
+| demo               |
+| information_schema |
+| mysql              |
+| performance_schema |
+| sys                |
++--------------------+
+5 rows in set (0.02 sec)
+
+mysql&gt; quit
+Bye
+</code></pre>
+<h2 id="servicios">Servicios</h2>
+<h3 id="introduction">Introduction</h3>
+<p>A continuación escalaremos nuestra aplicación y activaremos el balanceo de carga. Para esto, debemos ascender un nivel en la jerarquía de una aplicación distribuida: el servicio.</p>
+<pre class="Ventana_codigo"><code>Stack
+Services &lt;=
+Container 
+</code></pre>
+<h3 id="acerca-de-los-servicios">Acerca de los servicios</h3>
+<p>En una aplicación distribuida, los diferentes componentes de la app se denominan &quot;servicios&quot;. Por ejemplo, si pensamos en un sitio de compartición de videos, probablemente incluya un servicio para almacenar datos de la aplicación en una base de datos, un servicio para la transcodificación en segundo plano, después de que un usuario suba un video, y un servicio para el <em>front-end</em>.
+Los servicios son precisamente &quot;contenedores en producción&quot;. Un servicio sólo ejecuta una imagen, pero codifica la forma en la que la imagen se ejecuta, cuántos puertos debería usar, cuántas réplicas del contenedor deberían ejecutarse para que el servicio tenga la capacidad requerida, etc. El escalado de un servicio cambia el número de instancias de un contenedor que ejecutan un componente software, asignando más recursos de computación al servicio en el proceso.</p>
+<p>Afortunadamente, es muy sencillo definir, ejecutar y escalar servicios con la plataforma Docker. Tan sólo consiste en escribir un fichero <code>docker-compose.yml</code>. En éste se especifican para cada servicio, las imágenes que forman parte de cada servicio, y las redes a las qeu están conectados los servidores.</p>
+<h3 id="fichero-docker-compose.yml">Fichero <code>docker-compose.yml</code></h3>
+<p>Un fichero <code>docker-compose.yml</code> es un fichero YAML file que define cómo los contenedores Docker deberían comportarse en producción. En general, la sintaxis es la siguiente:</p>
+<p><strong><code>docker-compose.yml</code></strong></p>
+<pre class="Ventana_codigo"><code class="language-yml">version: &quot;3&quot;
+services:
+  servicio1:
+    image: &lt;imagen a utilzar para desplegar este servicio&gt;
+    deploy:
+      replicas: &lt;número de réplicas a utilizar&gt;
+      resources:
+        limits:
+          cpus: &quot;&lt;cantidad de cpu asignada, entre 0 y 1&gt;&quot;
+          memory: &lt;memoria en Megas&gt;M
+      restart_policy:
+        condition: on-failure
+    ports:
+      - &quot;&lt;redirección&gt;:&lt;puerto en el contenedor&gt;&quot;
+    networks:
+      - &lt;&gt;nombre de red existente en la sección networks&gt;
+networks:
+  &lt;nomre de red1&gt;:
+  &lt;nombre de red2&gt;:
+  ...
+</code></pre>
+<p>Una vez que hayas almacenado este fichero en un directorio. Podrás desplegar los servicios especificados en el con Docker Swarm.</p>
+<h3 id="despliegue-de-servicios">Despliegue de Servicios</h3>
+<p>Antes de introducir el comando <code>docker stack deploy</code> se debe inicializar <code>docker swarm</code> con docker <code>swarm init</code>.</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu:~$ docker swarm init
+Swarm initialized: current node (zjie1dn2qepjkmaxom97hv23b) is now a manager.
+
+To add a worker to this swarm, run the following command:
+
+    docker swarm join --token SWMTKN-1-69lla0dsoalb4lv4zl839yenv3jozvjkf8ifeaoco14pai5ft5-9adg90reqwjg25fq2x85ih2bx 192.168.122.59:2377
+
+To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
+</code></pre>
+<p>Swarm es la herramienta para gestionar clusters de contenedores (servicios)  en Docker. Una vez inicializado, se pueden añadir nodos de trabajo manualmente con <code>docker swarm join...</code> o se puede añadir un servicio  de una vez mediante un fichero YAML.</p>
+<p>Suponiendo que se ha desplegado un servicio de 5 instancias de la imagen <code>mjmoron/get_started:part2</code> Ahora desplegamos nuestro servicio a partir del fichero YAML y lo nombramos como <code>getstartedlab</code>:</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu:~$ docker stack deploy -c docker-compose.yml getstartedlab
+Creating network getstartedlab_webnet
+Creating service getstartedlab_web
+</code></pre>
+<p>Para comprobar que el servicio está desplegado:</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu:~/img2$ docker service ls
+ID                  NAME                MODE                REPLICAS            IMAGE                       PORTS
+2yipccigbcv7        getstartedlab_web   replicated          5/5                 mjmoron/get_started:part2   *:4000-&gt;80/tcp
+
+</code></pre>
+<p>O bien:</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu:~/img2$ docker stack services getstartedlab 
+ID                  NAME                MODE                REPLICAS            IMAGE                       PORTS
+2yipccigbcv7        getstartedlab_web   replicated          5/5                 mjmoron/get_started:part2   *:4000-&gt;80/tcp
+</code></pre>
+<p>Una tarea (<em>task</em>) es un  contenedor ejecutándose dentro de un servicio. A cada tarea se le asigna IDs único que se incrementa hasta el número de réplicas definidas en el fichero YAML. Para obtener un listado podemos teclear:</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu:~/img2$ docker service ps getstartedlab_web 
+ID                  NAME                  IMAGE                       NODE                DESIRED STATE       CURRENT STATE            ERROR               PORTS
+5bnegtpr2ej5        getstartedlab_web.1   mjmoron/get_started:part2   ubuntu              Running             Running 18 minutes ago                       
+rfup7i4v413i        getstartedlab_web.2   mjmoron/get_started:part2   ubuntu              Running             Running 18 minutes ago                       
+eo7mf9rhgqod        getstartedlab_web.3   mjmoron/get_started:part2   ubuntu              Running             Running 18 minutes ago                       
+ofwff7hyetan        getstartedlab_web.4   mjmoron/get_started:part2   ubuntu              Running             Running 18 minutes ago                       
+xlbjancxjwsk        getstartedlab_web.5   mjmoron/get_started:part2   ubuntu              Running             Running 18 minutes ago         
+</code></pre>
+<p>Para obtener los identificadores de los contenedores:</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu:~/img2$ docker container ls -q
+321770f1b956
+2c0b5e70046e
+b4cd180423e3
+a10546119c3a
+10b65b1f508d
+</code></pre>
+<p>Ejecutando sucesivamente el comando <code>curl</code>, o refrescando la página en el navegador, se obtienen distintos identificadores, lo que nos indica que se realiza un balanceo de carga:</p>
+<pre class="Ventana_codigo"><code>docker@ubuntu:~/img2$ curl http://0.0.0.0:4000
+&lt;h3&gt;Hello World!&lt;/h3&gt;&lt;b&gt;Hostname:&lt;/b&gt; b4cd180423e3&lt;br/&gt;&lt;b&gt;Visits:&lt;/b&gt; &lt;i&gt;cannot connect to Redis, counter disabled&lt;/i&gt;
+docker@ubuntu:~/img2$ curl http://0.0.0.0:4000
+&lt;h3&gt;Hello World!&lt;/h3&gt;&lt;b&gt;Hostname:&lt;/b&gt; a10546119c3a&lt;br/&gt;&lt;b&gt;Visits:&lt;/b&gt; &lt;i&gt;cannot connect to Redis, counter disabled&lt;/i&gt;
+docker@ubuntu:~/img2$ curl http://0.0.0.0:4000
+&lt;h3&gt;Hello World!&lt;/h3&gt;&lt;b&gt;Hostname:&lt;/b&gt; 2c0b5e70046e&lt;br/&gt;&lt;b&gt;Visits:&lt;/b&gt; &lt;i&gt;cannot connect to Redis, counter disabled&lt;/i&gt; 
+docker@ubuntu:~/img2$ curl http://0.0.0.0:4000
+&lt;h3&gt;Hello World!&lt;/h3&gt;&lt;b&gt;Hostname:&lt;/b&gt; 321770f1b956&lt;br/&gt;&lt;b&gt;Visits:&lt;/b&gt; &lt;i&gt;cannot connect to Redis, counter disabled&lt;/i&gt;
+docker@ubuntu:~/img2$ curl http://0.0.0.0:4000
+&lt;h3&gt;Hello World!&lt;/h3&gt;&lt;b&gt;Hostname:&lt;/b&gt; 10b65b1f508d&lt;br/&gt;&lt;b&gt;Visits:&lt;/b&gt; &lt;i&gt;cannot connect to Redis, counter disabled&lt;/i&gt;
+</code></pre>
+<h3 id="escalando-la-app">Escalando la app</h3>
+<p>Para escalar la app podemos modificar el valor del parámetro <code>replicas</code> en el fichero <code>docker-compose.yml</code> y volver a ejecutar el comando <code>docker stack deploy</code>:</p>
+<pre class="Ventana_codigo"><code>docker stack deploy -c docker-compose.yml getstartedlab
+</code></pre>
+<p>Docker realizará una actualización inmediata, sin necesidad de parar o eliminiar los contenedores.
+Se puede comprobar, mediante el comando <code>docker container ls -q</code>que el número de instancias ha cambiado
+Para finalizar la app y el <em>swarm</em></p>
+<pre class="Ventana_codigo"><code>docker stack rm getstartedlab
+docker swarm leave --force
+</code></pre>
+<h2 id="ejercicios">EJERCICIOS</h2>
+<ul>
+<li>Escoja una imagen que contenga un servidor web Apache y ejecútela. Déjelo corriendo en segundo plano.</li>
+<li>Abra una consola interactiva y visualice el contenido del fichero index.html que estará en la raiz de documentos web del servidor Apache.</li>
+<li>Cree un fichero en la máquina virtual llamado <code>index.html</code> con el contenido que se muestra mas abajo.</li>
+<li><em><strong class="HITO">HITO</strong></em> Copie el fichero dentro del contenedor que anteriormente puso a funcionar. Verifique que el se puede ver el contenido del fichero a través del servidor web haciendo una llamada con curl a la dirección del contenedor que acaba de poner en marcha.</li>
+<li>Cree un servicio con Docker Swarm en el que se pongan en alta disponibilidad 5 servidores apache en el que cada uno muestre una página web diferente (puede hacerlo variando el texto que hay después de los puntos suspensivos del fichero <code>index.html</code>). Redireccione el puerto 80 de los servidores al puerto 4000. Verifique que funcionan de la misma manera que en el ejercicio anterior y compruebe que al llamar a la URL del servicio cada vez aparece un servidor distinto.</li>
+<li>Haga una prueba de capacidad al servicio que acaba de crear, utilizando ab en la máquina virtual, y poniendo como dirección para la prueba de carga, la dirección del servicio redundado.</li>
+</ul>
+<pre class="Ventana_codigo"><code>index.html
+</code></pre>
+<pre class="Ventana_codigo"><code class="language-html">&lt;HTML&gt;
+&lt;HEAD&gt;&lt;TITLE&gt;Mi servicio web &lt;/TITLE&gt;&lt;/HEAD&gt;
+&lt;BODY&gt;&lt;H1&gt;Página del servidor .... &lt;/H1&gt;&lt;/BODY&gt;
+&lt;/HTML&gt;
+
+</code></pre>
+
+    </body>
+</html>
+            
