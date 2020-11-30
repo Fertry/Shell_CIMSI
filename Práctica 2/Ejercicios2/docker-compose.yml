@@ -1,0 +1,20 @@
+version: "3"
+services:
+  servicio1:
+    image: <imagen a utilzar para desplegar este servicio>
+    deploy:
+      replicas: <número de réplicas a utilizar>
+      resources:
+        limits:
+          cpus: "<cantidad de cpu asignada, entre 0 y 1>"
+          memory: <memoria en Megas>M
+      restart_policy:
+        condition: on-failure
+    ports:
+      - "<redirección>:<puerto en el contenedor>"
+    networks:
+      - <>nombre de red existente en la sección networks>
+networks:
+  <nomre de red1>:
+  <nombre de red2>:
+  ...
