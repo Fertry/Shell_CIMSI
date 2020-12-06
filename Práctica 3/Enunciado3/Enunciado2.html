@@ -1,0 +1,346 @@
+<!DOCTYPE html []>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="author" content="MarkdownViewer++" />
+    <title>CIMSI: Práctica 3</title>
+    <script type="application/javascript">
+		function impresora(){
+			document.getElementById("pagestyle").setAttribute("href", "impresora.css");
+		}
+		function pantalla(){
+			document.getElementById("pagestyle").setAttribute("href", "pantalla.css");
+		}		
+	</script>
+	<link id="pagestyle" href="pantalla.css" rel="stylesheet" type="text/css" />    
+  </head>
+  <body>
+  <h1><center> Configuración, Implementación y Mantenimiento de Sistemas Informáticos. Tercer curso. </center>
+    </h1>
+      <div align="right">
+        <input name="boton1" type="submit" id="boton" onClick="impresora()" value="Versión Impresora">
+        <input name="boton2" type="submit" id="boton" onClick="pantalla()" value="Versión Pantalla">      
+      </div>    
+<hr />
+    <h1 id="practica-3-gestion-de-entornos-de-desarrollo-con-vagrant">Práctica 3: Gestión de Entornos de desarrollo con Vagrant</h1>
+    <h2 id="objetivo">Objetivo</h2>
+    <p>El objetivo de esta practica es que el alumno se familiarice con la herramienta Vagrant para la automatización de tareas de administración de plataformas de virtualización. Con este fin se proponen la realización de las siguientes tareas:</p>
+    <ul>
+      <li>
+        <p>Instalación de Vagrant.</p>
+      </li>
+      <li>
+        <p>Creación de máquinas virtuales con Vagrant y VirtualBox.</p>
+      </li>
+      <li>
+        <p>Personalización de MVs con Vagrant.</p>
+      </li>
+      <li>
+        <p>Creación de escenarios de MVs con Vagrant</p>
+      </li>
+    </ul>
+    <h2 id="introduccion">Introducción</h2>
+    <p>Vagrant es una aplicación libre desarrollada en ruby que nos permite crear y personalizar entornos de desarrollo livianos, reproducibles y portables. Vagrant nos permite automatizar la creación y gestión de máquinas virtuales.</p>
+    <p>Las máquinas virtuales creadas por Vagrant se pueden ejecutar con distintos gestores de máquinas virtuales (VirtualBox, VMWare, KVM,…)</p>
+    <p>El objetivo principal de Vagrant es aproximar los entornos de desarrollo y producción, de esta manera el desarrollador tiene a su disposición una manera muy sencilla de desplegar una infraestructura similar a la que se va a tener en entornos de producción. A los administradores de sistemas les facilita la creación de infraestrucutras de prueba y desarrollo.</p>
+    <p>Vagrant es una aplicación que se instala dentro de un host (o máquina que aloja en su interior varias máquinas virtuales con la ayuda de un hipervisor), e interacciona con el hipervisor (o proveedor) para arrancar, gestionar o parar un conjunto de máquinas virtuales (escenario) definido por un archivo de texto (Vagrantfile). Para operar con Vagrant el administrador tendrá que abrir una consola de comandos en el propio host e interaccionar via comandos de texto. Para abrir una consola de comandos:</p>
+    <ul>
+      <li>Windows: ejecute la aplicación <strong>CMD</strong></li>
+      <li>Mac/Linux con sistema de gestión de ventanas: Abra una sesión de <strong>Terminal</strong></li>
+      <li>Linux sin sistema de gestión de ventanas: si posee una máquina de este tipo, o bien está operando dentro de una máquina virtual por equivocación, o bien esta práctica no tiene mucho sentido para usted. Por favor, consulte con el profesor de prácticas.</li>
+    </ul>
+    <p>
+      <img src="Figuras/EsquemaFuncionamiento.png" alt="Esquema general" />
+    </p>
+    <p>La documentación de Vagrant está accesible en: <a href="https://www.vagrantup.com/docs/">https://www.vagrantup.com/docs/</a></p>
+    <h2 id="instalacion">Instalación</h2>
+    <p>Vagrant está instalado por defecto en las máquinas de los laboratorios de prácticas. Si va a trabajar este boletín en su ordenador, es posible instalarlo para cualquier sistema operativo Windows, MacOS o Linux, desde <a href="https://www.vagrantup.com/downloads.html">https://www.vagrantup.com/downloads.html</a>.</p>
+    <p>En sistemas Linux Debian/Ubuntu podemos teclear desde la consola de comandos
+<code>apt-get install vagrant</code> para instalar directamente desde los repositorios, incluyendo las dependencias.</p>
+    <p>La puedse saber qué version ha sido instalada mediante el comando <code>vagrant -v</code>. Por ejemplo, para un host Ubuntu 18.04 es:</p>
+    <pre class="Ventana_codigo">
+<code class="language-shell">$ vagrant -v
+Vagrant 2.0.2 
+</code>
+    </pre>
+    <p>
+      <strong>Nota:</strong>
+Para obtener la úlitma versión de Vagrant podemos descargarnos el paquete <em>.deb</em> desde <a href="https://www.vagrantup.com/downloads.html">https://www.vagrantup.com/downloads.html</a>.</p>
+    <p>Una alternativa para Debian/Ubuntu es emplear un repositorio PPA no oficial. A continuación se indican los pasos para configurar el repositorio:</p>
+    <pre class="Ventana_codigo">
+<code class="language-shell">$ sudo bash -c 'echo deb https://vagrant-deb.linestarve.com/ any main &gt; /etc/apt/sources.list.d/wolfgang42-vagrant.list'
+$ sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key AD319E0F7CFFA38B4D9F6E55CE3F3DE92099F7A4 D2BABDFD63EA9ECAB4E09C7228A873EA3C7C705F
+$ sudo apt-get update
+$ sudo apt-get install vagrant
+</code>
+    </pre>
+    <h3 id="proveedores">Proveedores</h3>
+    <p>Un proveedor es, para Vagrant, un entorno de virtualización sobre el cual se va a realizar un despliegue. Por defecto, Vagrant utiliza <strong>Virtualbox</strong>, aunque es también compatible con <strong>KVM/libvirt</strong>, <strong>HyperV</strong> o incluso <em>clouds</em> como <strong>AWS</strong> o <strong>Azure</strong>.
+Por tanto, si es quiere instalar VirtualBox en nuestra máquina (en el caso de que aún no esté instalado):</p>
+    <p>
+      <code># apt install virtualbox</code>
+    </p>
+    <h3 id="boxes">Boxes</h3>
+    <p>Un <em>box</em> es la imagen de una máquina virtual empaquetada. Para crear una máquina virtual, Vagrant clonará un <em>box</em>.
+Vagrant proporciona <em>boxes</em> oficiales desde <a href="https://app.vagrantup.com/boxes/search">https://app.vagrantup.com/boxes/search</a>. Otro sitio con <em>boxes</em>: <a href="http://www.vagrantbox.es/">http://www.vagrantbox.es/</a></p>
+    <p>Para poder utilizar un box es necesario agregarlo a nuestro repositorio de boxes, utilizando:</p>
+    <p>
+      <code>vagrant box add {title} {url}</code>
+    </p>
+    <p>Podemos obtener una distribución <em>Debian Stretch</em> de 64 bits para ser empleada en nuestro escenario:</p>
+    <pre class="Ventana_codigo">
+<code>$ vagrant box add debian/stretch64
+==&gt; box: Loading metadata for box 'debian/stretch64'
+    box: URL: https://vagrantcloud.com/debian/stretch64
+This box can work with multiple providers! The providers that it
+can work with are listed below. Please review the list and choose
+the provider you will be working with.
+
+1) libvirt
+2) virtualbox
+
+Enter your choice: 2
+==&gt; box: Adding box 'debian/stretch64' (v9.8.0) for provider: virtualbox
+    box: Downloading: https://vagrantcloud.com/debian/boxes/stretch64/versions/9.8.0/providers/virtualbox.box
+==&gt; box: Successfully added box 'debian/stretch64' (v9.8.0) for 'virtualbox'!
+</code>
+    </pre>
+    <p>Hemos seleccionado el proveedor de virtualización <strong>VirtualBox</strong> entre las dos opciones para las que se ofrecen para este <em>box</em>. Esto sólo será necesario si se dispone de múltiples imágenes del <em>box</em> y tenemos instalados localmente varios proveedores de virtualización.
+El <em>box</em> se habrá guardado en <code>/home/usuario/.vagrant.d/boxes</code> (en Linux).</p>
+    <p>Podemos ver la lista de boxes que tenemos en nuestro repositorio con la instrucción:</p>
+    <pre class="Ventana_codigo">
+<code>$ vagrant box list
+debian/stretch64 (virtualbox, 9.9.1)
+</code>
+    </pre>
+    <h3 id="vagrantfile">Vagrantfile</h3>
+    <p>Para configurar las máquinas virtuales se emplea un fichero de configuración <em>Vagranfile</em>. El fichero <em>Vagrantfile</em> describe una o varias instancias para crear un entorno Vagrant en el directorio en el que se este trabajando. Por lo tanto se pueden tener varios <em>Vagranfile</em> en diferentes directorios.</p>
+    <p>Para crea un <em>Vagrantfile</em> inicial para un proyecto:</p>
+    <pre class="Ventana_codigo">
+<code>$ mkdir entorno
+ $ cd entorno
+ ~/entorno$ vagrant init debian/stretch64
+</code>
+    </pre>
+    <h3 id="gestion-de-las-maquinas-virtuales">Gestión de las máquinas virtuales</h3>
+    <p>Una vez que tenemos nuestras máquinas virtuales configuradas, es hora de trabajar con ellas, para ello tenemos varios comandos que vamos a estudiar.
+<code>vagrant up</code>: nos permite arrancar las una clonación desde el box, y se realizará la configuración. Si las máquinas ya han sido creadas, pero están suspendidas, se vuelven a arrancar.</p>
+    <p>Partiendo del ejemplo básico anterior:</p>
+    <pre class="Ventana_codigo">
+<code>~/entorno$ vagrant init debian/stretch64
+~/entorno$ vagrant up
+Bringing machine 'default' up with 'virtualbox' provider...
+==&gt; default: Importing base box 'debian/stretch64'...
+==&gt; default: Matching MAC address for NAT networking...
+==&gt; default: Checking if box 'debian/stretch64' version '9.9.1' is up to date...
+==&gt; default: Setting the name of the VM: entorno_default_1566551246799_97343
+==&gt; default: Clearing any previously set network interfaces...
+==&gt; default: Preparing network interfaces based on configuration...
+    default: Adapter 1: nat
+==&gt; default: Forwarding ports...
+    default: 22 (guest) =&gt; 2222 (host) (adapter 1)
+==&gt; default: Running 'pre-boot' VM customizations...
+==&gt; default: Booting VM...
+==&gt; default: Waiting for machine to boot. This may take a few minutes...
+    default: SSH address: 127.0.0.1:2222
+    default: SSH username: vagrant
+    default: SSH auth method: private key
+    default: 
+    default: Vagrant insecure key detected. Vagrant will automatically replace
+    default: this with a newly generated keypair for better security.
+    default: 
+    default: Inserting generated public key within guest...
+    default: Removing insecure key from the guest if it's present...
+    default: Key inserted! Disconnecting and reconnecting using new SSH key...
+==&gt; default: Machine booted and ready!
+==&gt; default: Checking for guest additions in VM...
+    default: No guest additions were detected on the base box for this VM! Guest
+    default: additions are required for forwarded ports, shared folders, host only
+    default: networking, and more. If SSH fails on this machine, please install
+    default: the guest additions and repackage the box to continue.
+    default: 
+    default: This is not an error message; everything may continue to work properly,
+    default: in which case you may ignore this message.
+==&gt; default: Installing rsync to the VM...
+==&gt; default: Rsyncing folder: /home/CIMSIusr/entorno/ =&gt; /vagrant
+
+==&gt; default: Machine 'default' has a post `vagrant up` message. This is a message
+==&gt; default: from the creator of the Vagrantfile, and not from Vagrant itself:
+==&gt; default: 
+==&gt; default: Vanilla Debian box. See https://app.vagrantup.com/debian for help and bug reports
+</code>
+    </pre>
+    <p>Comprobamos como crea la máquina virtual utilizando VirtualBox como proveedor y realizando la configuración indicada en el fichero <em>Vagrantfile</em>.</p>
+    <p>Para acceder a las máquinas por ssh podemos utilizar la instrucción <code>vagrant ssh</code> donde indicamos el nombre de la máquina donde queremos acceder.</p>
+    <pre class="Ventana_codigo">
+<code>CIMSIusr@ubuntu1804:~/entorno$ vagrant ssh
+Linux stretch 4.9.0-9-amd64 #1 SMP Debian 4.9.168-1+deb9u2 (2019-05-13) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.CIMSIusr@ubuntu1804:~/entorno$ vagrant halt
+==&gt; default: Attempting graceful shutdown of VM...
+
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+vagrant@stretch:~$ 
+</code>
+    </pre>
+    <p>Para terminar la sesión ssh podemos emplear <code>CTRL+D</code> o emplear el comando <code>logout</code> para finalizar la <em>shell</em>:</p>
+    <pre class="Ventana_codigo">
+      <code>vagrant@stretch:~$ logout
+Connection to 127.0.0.1 closed.
+CIMSIusr@ubuntu1804:~/entorno$ 
+</code>
+    </pre>
+    <p>Para detener el escenario sin destruir las máquinas virtualdes podemos emplear <code>vagrant halt</code>:</p>
+    <pre class="Ventana_codigo">
+<code>CIMSIusr@ubuntu1804:~/entorno$ vagrant halt
+==&gt; default: Attempting graceful shutdown of VM...
+</code>
+    </pre>
+    <p>Y volver a ejecutarlo partiendo de las máquiinas creadas:</p>
+    <pre class="Ventana_codigo">
+<code>CIMSIusr@ubuntu1804:~/entorno$ vagrant up
+Bringing machine 'default' up with 'virtualbox' provider...
+==&gt; default: Checking if box 'debian/stretch64' version '9.9.1' is up to date...
+==&gt; default: Clearing any previously set forwarded ports...
+==&gt; default: Clearing any previously set network interfaces...
+==&gt; default: Preparing network interfaces based on configuration...
+    default: Adapter 1: nat
+==&gt; default: Forwarding ports...
+    default: 22 (guest) =&gt; 2222 (host) (adapter 1)
+==&gt; default: Running 'pre-boot' VM customizations...
+==&gt; default: Booting VM...
+==&gt; default: Waiting for machine to boot. This may take a few minutes...
+    default: SSH address: 127.0.0.1:2222
+    default: SSH username: vagrant
+    default: SSH auth method: private key
+==&gt; default: Machine booted and ready!
+==&gt; default: Checking for guest additions in VM...
+    default: No guest additions were detected on the base box for this VM! Guest
+    default: additions are required for forwarded ports, shared folders, host only
+    default: networking, and more. If SSH fails on this machine, please install
+    default: the guest additions and repackage the box to continue.
+    default: 
+    default: This is not an error message; everything may continue to work properly,
+    default: in which case you may ignore this message.
+==&gt; default: Rsyncing folder: /home/CIMSIusr/entorno/ =&gt; /vagrant
+==&gt; default: Machine already provisioned. Run `vagrant provision` or use the `--provision`
+==&gt; default: flag to force provisioning. Provisioners marked to run always will still run.
+
+==&gt; default: Machine 'default' has a post `vagrant up` message. This is a message
+==&gt; default: from the creator of the Vagrantfile, and not from Vagrant itself:
+==&gt; default: 
+==&gt; default: Vanilla Debian box. See https://app.vagrantup.com/debian for help and bug reports
+</code>
+    </pre>
+    <p>Si queremos destruir completamente el escenario, incluyendo las máquinas virtuales, ejecutamos <code>vagrant destroy</code>:</p>
+    <pre class="Ventana_codigo">
+<code>CIMSIusr@ubuntu1804:~/entorno$ vagrant destroy
+    default: Are you sure you want to destroy the 'default' VM? [y/N] y
+==&gt; default: Forcing shutdown of VM...
+==&gt; default: Destroying VM and associated drives...
+</code>
+    </pre>
+    <h3 id="configuracion-del-fichero-vagrantfile">Configuración del fichero Vagrantfile</h3>
+    <p>En el fichero <em>Vagrantfile</em> podemos indicar la configuración de varias máquinas virtuales, las opciones más comunes que podemos configurar son las siguientes:</p>
+    <ul>
+      <li>
+        <code>vm.box</code>: con esta opción elegimos el box de nuestro repositorio del que se va a crear la máquina virtual.
+Por ejemplo:
+<code>config.vm.box = "debian/stretch64"</code></li>
+      <li>
+        <code>vm.hostname</code>: indicamos el nombre de la máquina virtual. Es recomendable que si vamos a trabajar con varias máquinas virtuales, le asignemos un nombre significativo.
+Por ejemplo:
+<code>config.vm.hostname = "debian_redes"</code></li>
+      <li>
+        <code>vm.network</code>: nos permite indicar la configuración de red de la máquina virtual.
+Algunos ejemplos:
+<ul><li><p><code>config.vm.network :public_network,:bridge=&gt;"eth0"</code>
+Configura una tarjeta de red en modo Adaptador puente de VirtualBox, indicando la interfaz de red que usa en el anfitrión para ello.</p></li><li><p><code>config.vm.network :private_network, ip: "172.22.100.3"</code>
+Configura una tarjeta de red en modo Red interna de VirtualBox, indicando la ip que va a tener la máquina.</p></li><li><p><code>config.vm.network :private_network, type: "dhcp"</code>
+Configura una tarjeta de red en modo Red interna de VirtualBox, indicando que la ip se va a obtener automáticamente mediante DHCP.</p></li></ul></li>
+    </ul>
+    <p>En la documentación oficial de Vagrant hay más ejemplos para configurar la cantidad de memoria RAM, el número de núcleos del procesador asignados a cada máquina, etc.</p>
+    <h3 id="configurar-multiples-maquinas-virtuales">Configurar múltiples máquinas virtuales</h3>
+    <p>Para crear un escenario complejo podemos utilizar el fichero de configuración <code>Vagrantfile</code> para configurar simultáneamente varias máquinas virtuales. Suponiendo un escenario con dos nodos conectados a una red privada común, el fichero <code>Vagrantfile</code> quedaría como sigue:</p>
+    <pre class="Ventana_codigo">
+<code class="language-ruby"># vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+
+  config.vm.define :nodo1 do |nodo1|
+    nodo1.vm.box = "debian/stretch64"
+    nodo1.vm.hostname = "nodo1"
+    nodo1.vm.network :private_network, ip: "10.1.1.101"
+  end
+  config.vm.define :nodo2 do |nodo2|
+    nodo2.vm.box = "debian/stretch64"
+    nodo2.vm.hostname = "nodo2"
+    nodo2.vm.network :private_network, ip: "10.1.1.102"
+  end
+end
+</code>
+    </pre>
+    <p>Para acceder a una máquina virtual concreta a través de ssh:</p>
+    <pre class="Ventana_codigo">
+<code>CIMSIusr@ubuntu1804:~/entorno2$ vagrant ssh nodo1
+Linux nodo1 4.9.0-9-amd64 #1 SMP Debian 4.9.168-1+deb9u2 (2019-05-13) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+You have new mail.
+vagrant@nodo1:~$ 
+
+</code>
+    </pre>
+    <p>Para detener una máquina concreta y volverla a configurar:</p>
+    <pre class="Ventana_codigo">
+<code>CIMSIusr@ubuntu1804:~/entorno2$ vagrant halt nodo1
+==&gt; nodo1: Attempting graceful shutdown of VM...
+CIMSIusr@ubuntu1804:~/entorno2$ vagrant up nodo1
+Bringing machine 'nodo1' up with 'virtualbox' provider...
+==&gt; nodo1: Checking if box 'debian/stretch64' version '9.9.1' is up to date...
+==&gt; nodo1: Clearing any previously set forwarded ports...
+==&gt; nodo1: Clearing any previously set network interfaces...
+. . . 
+
+</code>
+    </pre>
+    <p>Para destruir el escenario, liberando los recursos:</p>
+    <pre class="Ventana_codigo">
+<code>CIMSIusr@ubuntu1804:~/entorno2$ vagrant destroy 
+    nodo2: Are you sure you want to destroy the 'nodo2' VM? [y/N] y
+==&gt; nodo2: Forcing shutdown of VM...
+==&gt; nodo2: Destroying VM and associated drives...
+    nodo1: Are you sure you want to destroy the 'nodo1' VM? [y/N] y
+==&gt; nodo1: Forcing shutdown of VM...
+==&gt; nodo1: Destroying VM and associated drives...
+</code>
+    </pre>
+    <h2 id="ejercicios">Ejercicios</h2>
+    <ol>
+      <li>Busque un box para virtual box Apache2 instalado. Asígnele 512MB de RAM y una conexión <code>host only</code> para que se pueda comunicar con el exterior. Puede modificar la
+configuración de la máquina para que se instale Apache desde el VagrantFile, o puede instalarlo una vez que haya puesto la máquina en marcha. Otra opción es descargarse un box con Apache ya instalado ( puede encontrarlo en <a href="https://app.vagrantup.com/boxes/search">https://app.vagrantup.com/boxes/search</a>).
+<ul><li>Nota: si opta por instalar Apache2, tenga en cuenta que antes deberá actualizar la máquina mediante <code>sudo apt update</code></li></ul></li>
+      <li>
+        <em>
+          <strong class="HITO">HITO</strong>
+        </em> Cree un escenario con dos máquinas virtuales como
+las del ejercicio 1 y échelas a andar. Verifique que se pueden comunicar entre si mediante el comado <code>ping</code>.
+<ul><li>Si no se comunican, puede ser que no tengan configurada la red. Configure la red como se sugiere en el VagrantFile.</li><li>Puede probar si funciona Apache, si configura una <code>private network</code> en sus máquinas, y con el navegador web de su host (deshabilite el proxy de su navegador), le da como URL la dirección ip de la máquina virtual que quiere comprobar. Use el comando <code>ifconfig</code> para ver las ips de cada uno de los adaptadores de la máquina virtual.</li></ul></li>
+      <li>Realice una prueba de capacidad mediante la herramienta ab (que viene
+instalada normalmente con Apache). Puede encontrar algunas directrices sobre cómo realizar la prueba de carga en el anexo del boletín de problemas del tema 2.
+<ul><li>No hace falta que haga la prueba completa. Puede ejecutar la prueba con
+concurrencias desde 1 hasta 16, avanzando en potencias de 2, como está indicado en el anexo del boletín de problemas del tema 2.</li></ul></li>
+    </ol>
+    <h2 id="notas-al-boletin">Notas al boletín</h2>
+    <p>Esta práctica funciona mejor usando Ubuntu como host en las máquinas de la ETSII. Si se utiliza Windows, se necesitan permisos de administración para poder levantar las interfaces de red de las máquinas virtuales.</p>
+  </body>
+</html>

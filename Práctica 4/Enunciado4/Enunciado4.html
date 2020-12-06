@@ -1,0 +1,428 @@
+<!DOCTYPE html []>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="author" content="MarkdownViewer++" />
+    <title>CIMSI: Práctica 4</title>
+    <script type="application/javascript">
+		function impresora(){
+			document.getElementById("pagestyle").setAttribute("href", "impresora.css");
+		}
+		function pantalla(){
+			document.getElementById("pagestyle").setAttribute("href", "pantalla.css");
+		}		
+	</script>
+	<link id="pagestyle" href="pantalla.css" rel="stylesheet" type="text/css" />    
+  </head>
+  <body>
+  <h1><center> Configuración, Implementación y Mantenimiento de Sistemas Informáticos. Tercer curso. </center>
+  </h1>
+      <div align="right">
+        <input name="boton1" type="submit" id="boton" onClick="impresora()" value="Versión Impresora">
+        <input name="boton2" type="submit" id="boton" onClick="pantalla()" value="Versión Pantalla">      
+      </div>    
+<hr />
+    <h1 id="practica-4-orquestacion-de-contenedores-con-kubernetes">Práctica 4: Orquestación de contenedores con Kubernetes</h1>
+    <h2 id="objetivo">Objetivo</h2>
+    <p>El objetivo de esta práctica es familiarizarse con los conceptos básicos de Kubernetes. Para ello utilizaremos Microk8s, que se distribuye como <code>snap</code> (instalación con dependencias incluidas) y que, además, se puede ejecutar localmente. MicroK8s es una implementación de Kubernetes simplificada, es decir, de un solo nodo que se instala en casi cualquier box de Linux.</p>
+    <p>Kubernetes es una herramienta de orquestación de contenedores, que puede utilizar a su vez varias soluciones para el despliegue de contenedores (como Docker).</p>
+    <p>Esta práctica, se va a realizar en forma de tutorial, y tras llevar a cabo la instalación y configuración de Microk8s, se va a alojar un servicio básico y comprobar su despliegue a través del Dashboard.</p>
+    <h2 id="introduccion">INTRODUCCIÓN</h2>
+    <p>Microk8s es una implementación mínima de Kubernetes que permite hacer un despliegue de contenedores en un nodo de trabajo contenido en un ordenador de pocas prestaciones. Puede correr diréctamente en un host con Linux, Mac o incluso Windows, o bien correr dentro de una máquina virtual (como es nuestro caso).</p>
+    <p>En prácticas anteriores hemos visto cómo ha ido evolucionando la tecnología para lograr una mejor escalabilidad de aplicaciones y servicios, de manera que con cada avance, se hace mas fácil desplegar y escalar la infraestructura requerida para éstos:</p>
+    <ul>
+      <li>Práctica 1: virtualización con hipervisores de tipo 2. Permiten desplegar máquinas virtuales sin tener que comprar ni configurar máquinas reales. Fácil gestión del hardware virtualizado y de las imágenes.</li>
+      <li>Práctica 2: Gestión de escenarios con Vagrant. Permiten hacer despliegues basados en hipervisores, de una forma más ágil y automatizada. Facilidad para la construcción de escenarios con scripts en modo texto.</li>
+      <li>Práctica 3: Contenerización con Docker. Cambia el paradigma de virtualización a la tecnología de contenedores. Se pueden hacer cosas similares a las que se pueden hacer con hipervisores, y se añade un nivel de orquestación que permite el despliegue de escenarios (mejor dicho, servicios) con facilidad. El paradigma de la contenerización reduce el costo computacional y de recursos de los nodos de cómputo.</li>
+      <li>Práctica 4: Orquestación de contenedores. Con Kubernetes se tiene una herramienta completa de orquestación de servicios (muy parecida al nivel de orquestación que ofrece Docker) que permite el despliegue de servicios y multitud de nodos de cómputo con facilidad, sin importar el host en el que se despliegan.</li>
+    </ul>
+    <p>Hay que tener en cuenta que cada uno de estos avances en la agilización de los despliegues de infraestructura se contruye con tecnologías que se apoyan las unas sobre las otras. Así por ejemplo, Vagrant se apoya en un hipervisor para levantar las máquinas virtuales. Docker se apoya en el kernel de Linux para crear los contenedores y gestionar la importación y exportación de los mismos a repositorios remotos. Swarm se apoya en Docker para hacer posible la gestión de sus contenedores...</p>
+    <p>El caso de Kubernetes es algo especial: Kubernetes es una herramienta de orquestación de contenedores que surgió antes de que los creadores de Docker crearan su propia solución (Swarm). De esta forma, Kubernetes se apoyó en Docker para lograr la gestión de los contenedores, haciendo uso de sus APIs. Cuando nació Docker Swarm, Kubernetes era una solución muy implantada ya en el mercado y Swarm no pudo competir con ella. Por esta razón, Swarm y Kubernetes son herramientas del mismo tipo, competidoras entre si. A continuación se muestra un gráfico que indica las dependencias tecnológicas de lo que hasta ahora se ha visto en el temario de prácticas.</p>
+    <p>
+      <img src="figuras/RelTecnologica.png" alt="RelTecnologica" width="100%"/>
+    </p>
+    <p>Como se puede ver en la figura, las tecnologías de virtualización están marcadas en amarillo y las de orquestación/gestión de infraestructura están marcadas en verde. Se le ha dado menor altura a Vagrant respecto a sus compañeras de clase por ser una solución que ofrece menor agilidad de escalado que el resto.</p>
+    <p>Una vez conocidas las relaciones entre kubernetes, docker y el sistema operativo hay que hacer una puntualización. Al ser Microk8s una implementación reducida de Kubernetes no se basa como éste, en una solución de contenerización completa (como lo hace Docker) sino que se apoya en una parte de docker (containerd) para hacer más ligera su ejecución. Por esta razón, Microk8s no permite la generación de imágenes, sino que ha de coger sus imágenes de repositorios en red (como DockerHub) que le surtan de éstas. Una solución "local" a este problema es tener un Docker instalado aparte de Microk8s para generar las imágenes y hacerlas importar localmente a microk8s.</p>
+    <p>
+      <em>
+        <strong>NOTA</strong>
+      </em>: Microk8s y Docker <strong>no son compatibles</strong> entre si, y pueden producirse problemas si ambos están instalados bajo el mismo sistema operativo.</p>
+    <h2 id="tutorial-de-ejercicios">TUTORIAL DE EJERCICIOS</h2>
+    <h3 id="instalacion-y-comprobacion-de-estado">Instalación y comprobación de estado</h3>
+    <p>Para esta práctica se le suministrará una máquina virtual con MicroK8s ya instalado. No obstante, si quiere instalar por su cuenta Microk8s en una máquina nueva, siga los siguientes pasos:</p>
+    <p>Comenzamos instalando el paquete <code>snap</code>:</p>
+    <pre class="Ventana_codigo">
+<code>root@osboxes:~$ apt install snapd</code>    </pre>
+    <p>Y, a continuación, procedemos a instalar Microk8s:</p>
+    <pre class="Ventana_codigo">
+<code>root@osboxes:~$ sudo snap install microk8s --classic
+2019-06-25T12:20:58+02:00 INFO Waiting for restart...
+microk8s v1.15.0 from Canonical✓ installed</code></pre>
+    <p>Añadimos la ruta al PATH:</p>
+    <pre class="Ventana_codigo">
+<code>root@osboxes:~$ export PATH=$PATH:/snap/bin</code></pre>
+    <p>Comprobamos con el siguiente comando, los <code>addons</code> disponibles y los que están activados/desactivados:</p>
+    <pre class="Ventana_codigo">
+<code>root@osboxes:~$ microk8s.status
+microk8s is running
+addons:
+knative: disabled
+jaeger: disabled
+fluentd: disabled
+gpu: disabled
+storage: disabled
+registry: disabled
+rbac: disabled
+ingress: disabled
+dns: disabled
+metrics-server: disabled
+linkerd: disabled
+prometheus: disabled
+istio: disabled
+dashboard: disabled</code></pre>
+    <p>Los <code>addons</code> más importantes se enumeran a continuación:</p>
+    <ul>
+      <li>
+        <strong>dns:</strong> Despliega un servicio de DNS. Este addon puede ser requerido por otros, por lo que se recomienda desplegarlo siempre.</li>
+      <li>
+        <strong>dashboard:</strong> Despliega los paneles de control así como Grafana y la base de datos para monitorización, Influxdb.</li>
+      <li>
+        <strong>storage:</strong> Crea una clase de almacenamiento por defecto, que puede ser usada para provisionar persistencia a través de directorios en el host.</li>
+      <li>
+        <strong>ingress:</strong> Crea un controlador de tráfico Ingress que gestiona el tráfico externo de peticiones a los servicios de Kubernetes.</li>
+      <li>
+        <strong>gpu:</strong> Expone la GPU a MicroK8s habilitando el runtime de nvidia-docker y su demonio respectivo. Requiere de drivers ya instalados en el host.</li>
+      <li>
+        <strong>istio:</strong> Despliega el core de servicios de Istio. Use microk8s.istioctl para gestionar sus despliegues.</li>
+      <li>
+        <strong>registry:</strong> Despliega un registro privado de docker y lo expone en localhost:32000. El addon <code>storage</code> será habilitado como parte de este addon.</li>
+    </ul>
+    <p>A continuación, en el siguiente epígrafe pasamos a ver cómo activarlos:</p>
+    <h3 id="habilitando-addons">Habilitando <code>addons</code></h3>
+    <p>Con el siguiente comando vamos a activar dos: <code>dns</code> y <code>dashboard</code></p>
+    <pre class="Ventana_codigo">
+<code>root@osboxes:~$ microk8s.enable dns dashboard
+Enabling DNS
+Applying manifest
+serviceaccount/coredns created
+configmap/coredns created
+deployment.apps/coredns created
+service/kube-dns created
+Restarting kubelet
+DNS is enabled
+Applying manifest
+secret/kubernetes-dashboard-certs created
+serviceaccount/kubernetes-dashboard created
+role.rbac.authorization.k8s.io/kubernetes-dashboard-minimal created
+rolebinding.rbac.authorization.k8s.io/kubernetes-dashboard-minimal created
+deployment.apps/kubernetes-dashboard created
+service/kubernetes-dashboard created
+service/monitoring-grafana created
+service/monitoring-influxdb created
+service/heapster created
+deployment.extensions/monitoring-influxdb-grafana-v4 created
+serviceaccount/heapster created
+clusterrolebinding.rbac.authorization.k8s.io/heapster created
+configmap/heapster-config created
+configmap/eventer-config created
+deployment.extensions/heapster-v1.5.2 created
+
+If RBAC is not enabled access the dashboard using the default token retrieved with:
+
+token=$(microk8s.kubectl -n kube-system get secret | grep default-token | cut -d " " -f1)
+microk8s.kubectl -n kube-system describe secret $token
+
+In an RBAC enabled setup (microk8s.enable RBAC) you need to create a user with restricted
+permissions as shown in https://github.com/kubernetes/dashboard/wiki/Creating-sample-user</code>    </pre>
+    <h3 id="configuracion-de-firewall">Configuración de firewall</h3>
+    <p>La configuración del firewall (ufw, uncomplicated firewall) es necesaria para permitir la comunicación pod-pod y pod-internet puede abrir el firewall diréctamente (de hecho ya se ha hecho estoy para permitir la conexión de una consola remota por ssh):</p>
+    <p>
+      <code>sudo ufw disable</code>
+    </p>
+    <p>O puede permitir la entrada y salida de tramas de las interfaces que utiliza microk8s.</p>
+    <pre class="Ventana_codigo">
+<code>root@osboxes:~$ sudo ufw allow in on cbr0 &amp;&amp; sudo ufw allow out on cbr0
+
+Rules updated
+Rules updated (v6)
+Rules updated
+Rules updated (v6)
+
+root@osboxes:~$ sudo ufw default allow routed
+Default routed policy changed to 'allow'
+(be sure to update your rules accordingly)</code></pre>
+    <h3 id="accediendo-a-los-dashboards-kubernetes-y-grafana">Accediendo a los dashboards Kubernetes y Grafana</h3>
+    <p>
+      <strong>Dashboard de Kubernetes</strong>
+    </p>
+    <p>Ejecutamos el siguiente comando para obtener todos los pods y servicios en estado de ejecución:</p>
+    <pre class="Ventana_codigo">
+<code>root@osboxes:~$ microk8s.kubectl get all --all-namespaces
+NAMESPACE     NAME                                                  READY   STATUS    RESTARTS   AGE
+kube-system   pod/coredns-f7867546d-jm952                           1/1     Running   0          3m45s
+kube-system   pod/heapster-v1.5.2-844b564688-wf5nn                  4/4     Running   0          2m23s
+kube-system   pod/kubernetes-dashboard-7d75c474bb-8brqp             1/1     Running   0          3m20s
+kube-system   pod/monitoring-influxdb-grafana-v4-6b6954958c-fq266   2/2     Running   0          3m20s
+
+
+NAMESPACE     NAME                           TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                  AGE
+default       service/kubernetes             ClusterIP   10.152.183.1     &lt;none&gt;        443/TCP                  5m34s
+kube-system   service/heapster               ClusterIP   10.152.183.43    &lt;none&gt;        80/TCP                   3m20s
+kube-system   service/kube-dns               ClusterIP   10.152.183.10    &lt;none&gt;        53/UDP,53/TCP,9153/TCP   3m45s
+kube-system   service/kubernetes-dashboard   ClusterIP   10.152.183.211   &lt;none&gt;        443/TCP                  3m20s
+kube-system   service/monitoring-grafana     ClusterIP   10.152.183.83    &lt;none&gt;        80/TCP                   3m20s
+kube-system   service/monitoring-influxdb    ClusterIP   10.152.183.108   &lt;none&gt;        8083/TCP,8086/TCP        3m20s
+
+
+NAMESPACE     NAME                                             READY   UP-TO-DATE   AVAILABLE   AGE
+kube-system   deployment.apps/coredns                          1/1     1            1           3m45s
+kube-system   deployment.apps/heapster-v1.5.2                  1/1     1            1           3m20s
+kube-system   deployment.apps/kubernetes-dashboard             1/1     1            1           3m20s
+kube-system   deployment.apps/monitoring-influxdb-grafana-v4   1/1     1            1           3m20s
+
+NAMESPACE     NAME                                                        DESIRED   CURRENT   READY   AGE
+kube-system   replicaset.apps/coredns-f7867546d                           1         1         1       3m45s
+kube-system   replicaset.apps/heapster-v1.5.2-6b794f77c8                  0         0         0       3m20s
+kube-system   replicaset.apps/heapster-v1.5.2-6f5d55456                   0         0         0       2m35s
+kube-system   replicaset.apps/heapster-v1.5.2-844b564688                  1         1         1       2m23s
+kube-system   replicaset.apps/kubernetes-dashboard-7d75c474bb             1         1         1       3m20s
+kube-system   replicaset.apps/monitoring-influxdb-grafana-v4-6b6954958c   1         1         1       3m20s</code></pre>
+    <p>De la salida de este comando podemos obtener la <code>IP:port</code> a utilizar para acceder al Dashboard de Kubernetes: <code>10.152.183.211:443</code> y que por lo tanto, si queremos ver en nuestro navegador el Dashboard, deberíamos acceder a la URL <code>https://10.152.183.211:443/</code></p>
+    <p>
+      <strong>Nota: Acceso desde otra máquina</strong>
+Los <em>pods</em> sólo son accesibles desde la propia máquina donde hemos instalado <em>Microk8s</em> como paquete <em>snap</em>.
+Asumiendo que nuestro <em>host</em> es una máquina virtual, si quisieramos acceder desde un navegador en el anfitrión, previamente debemos configurar un <em>Proxy SOCKS SSH</em>.
+Para ello nos conectaremos, utilizando la dirección de alguna interfaz conectada a las redes compartidas entre el anfitrión y la MV, utilizando el siguiente comando:</p>
+    <pre class="Ventana_codigo">
+<code>consola_HOST:~$ ssh -D 1080 root@osboxes_ip</code></pre>
+    <p>A continuación configuramos el navegador para que utilice un <em>Proxy</em>. En concreto, debemos activar la opción que indica <em>Proxy SOCKS 5</em>, completándola con <code>localhost</code>y el puerto indicado en la conexión SSH (1080).</p>
+    <p>
+      <img src="figuras/Proxy-sock5.png" alt="Configuración Proxy" width="100%" />
+    </p>
+    <p>En cualquier caso, si intentamos acceder podremos comprobar que se muestra una vista de autenticación:
+<img src="figuras/KubernetesDashboard-Login.png" width="100%" alt="Kubernetes ventana de login" /></p>
+    <p>Por tanto, hay que generar un token con kubectl:</p>
+    <pre class="Ventana_codigo">
+<code>root@osboxes:~$ microk8s.kubectl -n default get secret
+NAME                  TYPE                                  DATA   AGE
+default-token-6tcfb   kubernetes.io/service-account-token   3      6d1h</code>    </pre>
+    <pre class="Ventana_codigo">
+<code>root@osboxes:~$ microk8s.kubectl -n default  describe secrets default-token-6tcfb
+Name:         default-token-6tcfb
+Namespace:    default
+Labels:       &lt;none&gt;
+Annotations:  kubernetes.io/service-account.name: default
+              kubernetes.io/service-account.uid: 9b72a2f6-77aa-4e76-b720-23822a6b592b
+
+Type:  kubernetes.io/service-account-token
+
+Data
+====
+ca.crt:     1099 bytes
+namespace:  7 bytes
+token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6ImRlZmF1bHQtdG9rZW4tNnRjZmIiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoiZGVmYXVsdCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjliNzJhMmY2LTc3YWEtNGU3Ni1iNzIwLTIzODIyYTZiNTkyYiIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDpkZWZhdWx0OmRlZmF1bHQifQ.UKX8AOLVCH6jYZ5UXETjpCmDnlCVAA7vzUtqjAeJvPj5TG47oLhpxNC4HDLEeIuzC2yfSI-amz8Jc5oa35mXjFGwsn690bbhkoiRIowc0REyOJ0CuxTecgMLntFcaldaa2HSuntpcjrTGL5zlFDfod_LPE6DkOaqn9t9ZHKe6pSdsSoAD-jED2Dxuv-_K_R_WRTnEDdw7nWkRux2WpsDupV7TvkMbsHz7-FJZE1CEwats6PVP8pbL214e8ZyJ789jgZRSKEUh8PJIoZgIVLKTmShyPyHdkPDGuZLm320t5rTvqD3yety-L1Nj1kaxKqUxXIQ1vmMYMnQ4TMpwtOBpw</code></pre>
+    <p>
+      <em>
+        <strong>NOTA</strong>
+      </em>: Para más detalles, véase <a href="https://github.com/kubernetes/dashboard/wiki/Access-control">https://github.com/kubernetes/dashboard/wiki/Access-control</a> -- Getting token with kubectl</p>
+    <p>Una vez generado, ya se puede acceder a Dashboard en la IP: port: 10.152.183.211:443, copiando el token mostrado como salida del comando.
+Se mostrará una vista como la siguiente:</p>
+    <p>
+      <img src="figuras/KubernetesDashboardOverview.png" width="100%" alt="Kubernetes vista de Overview" />
+    </p>
+    <p>
+      <strong>Grafana Dashboard</strong>
+Grafana permite monitorizar el rendimiento del cluster Kubernetes. Vamos a utilizar un enfoque alternativo para acceder a los servicios alojados, incluyendo Grafana. Concretamente, utilizaremos el siguiente comando:</p>
+    <pre class="Ventana_codigo">
+<code>root@osboxes:~$ microk8s.kubectl cluster-info
+Kubernetes master is running at https://127.0.0.1:16443
+Heapster is running at https://127.0.0.1:16443/api/v1/namespaces/kube-system/services/heapster/proxy
+CoreDNS is running at https://127.0.0.1:16443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+Grafana is running at https://127.0.0.1:16443/api/v1/namespaces/kube-system/services/monitoring-grafana/proxy
+InfluxDB is running at https://127.0.0.1:16443/api/v1/namespaces/kube-system/services/monitoring-influxdb:http/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'</code></pre>
+    <p>Si abrimos este enlace en el navegador de nuestro host, no podremos ver la interfaz de Graphana, ya que 127.0.0.1 es la interfaz local de la máquina virtual. Tendrá que acceder a Graphana a través del interfaz "host-only"· de la máquina virtual. Averigue la ip de dicha interfaz mediante el comando <code>ifconfig |less</code> y sustituya la dirección 127.0.0.1 en el siguiente comando.</p>
+    <p>La salida del comando nos muestra que Grafana está ejecutándose en: <a href="https://127.0.0.1:16443/api/v1/namespaces/kube-system/services/monitoring-grafana/proxy">https://127.0.0.1:16443/api/v1/namespaces/kube-system/services/monitoring-grafana/proxy</a></p>
+    <p>No obstante, antes de acceder a  hay que ejecutar el siguiente comando para obtener el nombre de usuario y la contraseña:</p>
+    <pre class="Ventana_codigo">
+<code>root@osboxes:~$ microk8s.config
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURDVENDQWZHZ0F3SUJBZ0lVTnZ0M2NxbGt0dkNvd0V3cWRrbXdFd0RIaVE0d0RRWUpLb1pJaHZjTkFRRUwKQlFBd0ZERVNNQkFHQTFVRUF3d0pNVEkzTGpBdU1DNHhNQjRYRFRFNU1EWXlOVEV3TWpFME1Gb1hEVFEyTVRFeApNREV3TWpFME1Gb3dGREVTTUJBR0ExVUVBd3dKTVRJM0xqQXVNQzR4TUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGCkFBT0NBUThBTUlJQkNnS0NBUUVBOFZ5TnNuc2hDMXpTSytxOUdxdEdVSWp0Yk1sdzRTWG5La0dMcWR3SDl2TnAKTURuSTNXY1RVTVFIT0VlQUtQSDVlM1dna1FvTVBLYUxrT0VqWFdXTVA1WmZ0RUx2bzAvWFZJWlV3ajgvb2dmVwpQOGFPai82cmIwdy90Z0NhL05KNHBJdE1xandiSjNFVmx6YlJ2VTJQMEdRVC9KTTFiWWFwZGxEaWo4S3YrZ1ZuClVBUlVmcTlNaXlkV1lvQVNVOVVWbFBEOEZQejBzMGptdHR6NWlRaHJVUVpxNlVER3pWejlNL211aTJ4UlRpVUsKRmdXWk92UHRCQjlYSWE4Y2M3NngyaWpyQVJBSy9rRW82NjNyTG5WbDNZeTdGRkUzeUR2QWFUN2YrcS9QeWVPQgpBR0xEaXlFOWs4b2FKNmhUNnVXZXZuaWRQUlJTaWJDRkZiaDBSNFR1VHdJREFRQUJvMU13VVRBZEJnTlZIUTRFCkZnUVVtQ1ZsNEVFU2toaDN1TkdYaTRvcXJPbmJlRWN3SHdZRFZSMGpCQmd3Rm9BVW1DVmw0RUVTa2hoM3VOR1gKaTRvcXJPbmJlRWN3RHdZRFZSMFRBUUgvQkFVd0F3RUIvekFOQmdrcWhraUc5dzBCQVFzRkFBT0NBUUVBQUgzdAp6UlBJS3N2VXNSN2JmdE5WOXM5S25SZ3JtSzNWYld3MlhGNVFuS0NLZGsxb0FlVFc3ZmRTVmNUSkFMWDhRL0V5CmtjWXplZ3Q4UC9KV252STdWSm5maklTSit4UDArL1MyOFBZbUVkRXMzeEJTVzRWRy80Nm55TDlnVERiUUR3MTMKcWU4UWkyTXF5UkwydGZPK0d1b0FUTUM5UDcxZ1RFZTN0dkhiL0Z0bTdRNGJzWXFqZWRpZEc1cWZmdWVRM3VCYgo0VjFGMjNic3gzTlV4dUF0UXh6dmovWHhVY1RKS2ROcGJYTjhGZHdpVVNlTWlLeG1Mb3llTklxQnp6ZUU5K3E2CktIQndLZzJtMTZFRlV1Qm9ETVpJNFBZTS9BNmx5ZlFobVM2ejZEdjZ4UUdLbXlrNjJVVFlnRC9pcFdWdFFVSG4KazR1b3BaUE0rbFFQNXFUaW1BPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+    server: https://192.168.122.149:16443
+  name: microk8s-cluster
+contexts:
+- context:
+    cluster: microk8s-cluster
+    user: admin
+  name: microk8s
+current-context: microk8s
+kind: Config
+preferences: {}
+users:
+- name: admin
+  user:
+    username: admin
+    password: MFlJM1hBL3ZDdksrbW9OcXhwWUUrWHczSU5MMWM4RmRZOWJDcTVxc3RyVT0K</code></pre>
+    <p>y utilizamos el username y password mostrados para acceder a Grafana:</p>
+    <p>
+      <img src="figuras/Kubernetes-Grafana.png" alt="Grafana" width="100%"/>
+    </p>
+    <h3 id="aloja-tu-primer-servicio-en-kubernetes">Aloja tu primer servicio en Kubernetes</h3>
+    <p>Creamos e iniciamos un despliegue con dos Pods de nginx listados en el puerto 80, con la imagen nginx del repositorio alpine:</p>
+    <pre class="Ventana_codigo">
+<code>root@osboxes:~$ microk8s.kubectl run tjf-nginx --image=nginx:alpine --replicas=2 --port=80
+kubectl run --generator=deployment/apps.v1 is DEPRECATED and will be removed in a future version. Use kubectl run --generator=run-pod/v1 or kubectl create instead.
+deployment.apps/tjf-nginx created</code></pre>
+    <p>Comprobamos que los pods están en ejecución:</p>
+    <pre class="Ventana_codigo">
+<code>root@osboxes:~$ microk8s.kubectl get pod
+NAME                         READY   STATUS              RESTARTS   AGE
+tjf-nginx-5cb57dc69f-7n2zw   0/1     ContainerCreating   0          4s
+tjf-nginx-5cb57dc69f-fbj2b   0/1     ContainerCreating   0          4s</code>    </pre>
+    <p>Para obtener más información de los PODs:</p>
+    <pre class="Ventana_codigo">
+<code>root@osboxes:~$  microk8s.kubectl describe pods tjf-nginx
+Name:           tjf-nginx-5cb57dc69f-7n2zw
+Namespace:      default
+Priority:       0
+Node:           kubernetes/192.168.122.149
+Start Time:     Tue, 25 Jun 2019 14:02:44 +0200
+Labels:         pod-template-hash=5cb57dc69f
+                run=tjf-nginx
+Annotations:    &lt;none&gt;
+Status:         Running
+IP:             10.1.1.9
+Controlled By:  ReplicaSet/tjf-nginx-5cb57dc69f
+Containers:
+  tjf-nginx:
+    Container ID:   containerd://fa8f9bc41240f25e4381833453cbc8fbf9785466eb7e235e698dd5688f188350
+    Image:          nginx:alpine
+    Image ID:       docker.io/library/nginx@sha256:b126fee6820be927b1e04ae36b3f51aa47d9b73bf6b1826ff19a59d22b2b4c63
+    Port:           80/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Tue, 25 Jun 2019 14:02:49 +0200
+    Ready:          True
+    Restart Count:  0
+    Environment:    &lt;none&gt;
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-fdh47 (ro)
+Conditions:
+  Type              Status
+  Initialized       True 
+  Ready             True 
+  ContainersReady   True 
+  PodScheduled      True 
+Volumes:
+  default-token-fdh47:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  default-token-fdh47
+    Optional:    false
+QoS Class:       BestEffort
+Node-Selectors:  &lt;none&gt;
+Tolerations:     node.kubernetes.io/not-ready:NoExecute for 300s
+                 node.kubernetes.io/unreachable:NoExecute for 300s
+Events:
+  Type    Reason     Age   From                    Message
+  ----    ------     ----  ----                    -------
+  Normal  Scheduled  3m7s  default-scheduler       Successfully assigned default/tjf-nginx-5cb57dc69f-7n2zw to kubernetes
+  Normal  Pulling    3m6s  kubelet, kubernetes  Pulling image "nginx:alpine"
+  Normal  Pulled     3m2s  kubelet, kubernetes  Successfully pulled image "nginx:alpine"
+  Normal  Created    3m2s  kubelet, kubernetes  Created container tjf-nginx
+  Normal  Started    3m2s  kubelet, kubernetes  Started container tjf-nginx
+
+Name:           tjf-nginx-5cb57dc69f-fbj2b
+Namespace:      default
+Priority:       0
+Node:           kubernetes/192.168.122.149
+Start Time:     Tue, 25 Jun 2019 14:02:44 +0200
+Labels:         pod-template-hash=5cb57dc69f
+                run=tjf-nginx
+Annotations:    &lt;none&gt;
+Status:         Running
+IP:             10.1.1.10
+Controlled By:  ReplicaSet/tjf-nginx-5cb57dc69f
+Containers:
+  tjf-nginx:
+    Container ID:   containerd://c8cf0acbf4e4d988cbb8b7bbf839c89164c969e713da6c38fafad4e8751f9905
+    Image:          nginx:alpine
+    Image ID:       docker.io/library/nginx@sha256:b126fee6820be927b1e04ae36b3f51aa47d9b73bf6b1826ff19a59d22b2b4c63
+    Port:           80/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Tue, 25 Jun 2019 14:02:50 +0200
+    Ready:          True
+    Restart Count:  0
+    Environment:    &lt;none&gt;
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-fdh47 (ro)
+Conditions:
+  Type              Status
+  Initialized       True 
+  Ready             True 
+  ContainersReady   True 
+  PodScheduled      True 
+Volumes:
+  default-token-fdh47:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  default-token-fdh47
+    Optional:    false
+QoS Class:       BestEffort
+Node-Selectors:  &lt;none&gt;
+Tolerations:     node.kubernetes.io/not-ready:NoExecute for 300s
+                 node.kubernetes.io/unreachable:NoExecute for 300s
+Events:
+  Type    Reason     Age   From                    Message
+  ----    ------     ----  ----                    -------
+  Normal  Scheduled  3m7s  default-scheduler       Successfully assigned default/tjf-nginx-5cb57dc69f-fbj2b to kubernetes
+  Normal  Pulling    3m6s  kubelet, kubernetes  Pulling image "nginx:alpine"
+  Normal  Pulled     3m2s  kubelet, kubernetes  Successfully pulled image "nginx:alpine"
+  Normal  Created    3m2s  kubelet, kubernetes  Created container tjf-nginx
+  Normal  Started    3m1s  kubelet, kubernetes  Started container tjf-nginx</code></pre>
+    <p>Ejecutamos el siguiente comando para hacerlos visibles, es decir, para exponer el servicio en un puerto dado, puerto, que podría utilizar en conjunción con mi dirección IP para acceder al servidor nginx:</p>
+    <pre class="Ventana_codigo">
+<code>root@osboxes:~$ microk8s.kubectl expose deployment tjf-nginx --type=NodePort --name=tjf2-nginx
+service/tjf2-nginx exposed</code>    </pre>
+    <p>A continuación, para acceder al servidor nginx, confirmamos la IP u obtenemos el puerto:</p>
+    <pre class="Ventana_codigo">
+<code>root@osboxes:~$ microk8s.kubectl get service
+NAME         TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+kubernetes   ClusterIP   10.152.183.1     &lt;none&gt;        443/TCP        108m
+tjf2-nginx   NodePort    10.152.183.195   &lt;none&gt;        80:30007/TCP   2m4s</code>    </pre>
+    <p>Alternativamente se puede ejecutar el siguiente comando:</p>
+    <pre class="Ventana_codigo">
+<code>root@osboxes:~$ microk8s.kubectl get svc
+NAME         TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+kubernetes   ClusterIP   10.152.183.1     &lt;none&gt;        443/TCP        112m
+tjf2-nginx   NodePort    10.152.183.195   &lt;none&gt;        80:30007/TCP   6m11s</code>    </pre>
+    <p>Ejecutamos el navegador web Lynx (navegador en modo texto), pasando como parámetros IP:puerto:</p>
+    <pre class="Ventana_codigo">
+<code>root@osboxes:~$ lynx http://10.152.183.195:80/</code>    </pre>
+    <p>y se muestra la pantalla de bienvenida de nginx al usuario:</p>
+    <p>
+      <img src="figuras/Pods-nginx.png" alt="Vista de bienvenida de nginx" width="100%"/>
+    </p>
+    <p>Si accedemos desde el navegador, puede comprobarse la vista web de bienvenida.</p>
+    <p>
+      <img src="figuras/Nginx-web-browser.png" alt="Vista web de bienvenida de nginx" width="100%"/>
+    </p>
+    <p>y ya, finalmente, para verficar nuestro despliegue desde el DashBoard volvemos a acceder:</p>
+    <p>
+      <img src="figuras/Dashboard-nginx.png" alt="Vista web de DashBoard con 2 pods de nginx desplegados" width="100%"/>
+    </p>
+    <h2 id="ejercicios">EJERCICIOS</h2>
+    <ul>
+      <li>Despliega un servicio con 5 contenedores NGINX como el descrito en el tutorial. Abre dos navegadores que muestren Grafana y el Dashboard de Microk8s, para que se pueda ver que el servicio está corriendo corréctamente.</li>
+      <li>
+        <em>
+          <strong class="HITO">
+            HITO
+        </strong>
+        </em>  Comprueba la resiliencia del servicio. Una vez que tengas el servicio funcionando, apaga un contenedor de dicho servicio y comprueba cómo se levanta por si mismo. Puedes utilizar el Dashboard para comprobarlo.</li>
+      <li>Realiza dos pruebas de capacidad de tu servicio utilizando Apache Benchmark.  Para ello, lanza la prueba desde la propia máquina virtual (que ya tendrá el AB instalado) hacia la IP del servicio. Las pruebas se realizarán con dos versiones del servicio, una con 5 réplicas, y la otra con 10. Averigua el número de clientes máximo del servicio en cada caso y compara los resultados. ¿Qué está pasando?</li>
+    </ul>
+  </body>
+</html>
