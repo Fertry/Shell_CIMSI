@@ -12,6 +12,8 @@ microk8s.status
 
 microk8s.enable dns dashboard (otros addons....)
 
+Para levantar Grafana: microk8s.enable dashboard prometheus
+
 ######################################################################################
 
 sudo ufw disable ó sudo ufw allow in on cbr0 && sud ufw allow out on cbr0
@@ -29,7 +31,7 @@ Para acceder desde el navegador:
     * hostname -I y hacer SSH desde la consola de Windows a la IP local (192.168.1.x) con ssh -D 1080 root@192.168.1.x
 
 3. Una vez desde la consola de la maquina en el terminal de Windows: 
-    * Accedemos a la IP del dashboard (https://10.152.183.211:443) y se presenta una ventana de acceso por token
+    * Accedemos a la IP del dashboard (https://10.152.183.211:443) y se presenta una ventana de acceso por token (hay que saltar el aviso de seguridad de SSL)
 
 4. Generamos un token de acceso:
     * microk8s.kubectl -n default get secret (genera un token con nomenclatura default-token-xxxxx)
@@ -52,6 +54,8 @@ Para entrar necesitamos credenciales que se obtienen de: microk8s.config > consu
 Alojar un servicio en Kubernetes: microk8s.kubectl run tjf-nginx --image=nginx:alpine --replicas=2 --port=80 (OJO que replicas esta deprecated
 y es posible que sea necesario ejecutar el comando sin el parametro de replicas pero hacerlo dos veces)
 
+Solución al problema de deprecated: microk8s kubectl create deployment tjf-test --image=nginx:alpine --replicas=2 --port=80
+
 Comprobar los pods en ejecución: microk8s.kubectl get pod (deberia mostrar sus nombres y estado igual que en el dashboard)
 
 Obtener información de un pod concreto: microk8s.kubectl describe pods nombre_del_pod
@@ -64,6 +68,6 @@ Acceder al servicio: IP + puerto: microk8s.kubectl get service (ó microk8s.kube
 
 Acceder al navegador Lynx en modo texto pasandole como parametro la IP + puerto: lynx http://10.152.183.195:80 (puerto especificado antes)
 
-(Tambien puede hacerse desde el navegador del host ya que esta configurado el proxy)
+(También puede hacerse desde el navegador del host ya que está configurado el proxy)
 
 ######################################################################################
